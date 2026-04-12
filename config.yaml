@@ -1,0 +1,117 @@
+# Household configuration for the weekly schedule generator.
+# Secrets (API keys, calendar IDs) live in .env — this file is safe to commit.
+#
+# CUSTOMIZE THIS FILE for your household. Replace the example names, schedules,
+# locations, and recurring events with your own.
+
+household:
+  adults:
+    alex:
+      role: "Primary scheduler"
+      work_days: [monday, tuesday, wednesday, thursday]
+      work_hours: "9:00-17:30"
+      commute_minutes: 25
+      office_location: "Downtown Office"
+      gym:
+        monday: "lift after work"
+        weekend: "lift 1 day, run 1 day"
+        midweek_runs: 1-2  # tries to run 1-2 additional days
+    jordan:
+      role: "Partner / Teacher"
+      leaves_home: "7:15"
+      returns_home: "17:00"
+      pool:
+        thursday: "straight from school, does not come home first"
+        tuesday: "sometimes, usually home first before heading out"
+        start_time: "17:30"  # pool starts after 5:30pm
+      squash: "1-2x/week, typically one weekend day — check shared GCal"
+      nightly_dog_walk: "22:00"
+    sam:
+      role: "Au pair"
+      weekly_hours: 45
+      schedule:
+        monday: "9:00-18:00"
+        tuesday: "8:00-17:00"
+        wednesday: "8:00-17:00"
+        thursday: "8:00-18:30"
+        friday: "balance"
+      notes: "Schedule is stable week-to-week. Changes are lasting, not one-offs. Needs weekly reminder to flag outside babysitting conflicts."
+
+  children:
+    baby:
+      age: "18 months"
+      swim:
+        day: tuesday
+        time: "11:00"
+        duration_min: 30
+        location: "Swim School Location"
+      forest_school:
+        day: thursday
+        time: "9:00-10:30"
+      nap: "13:00-15:30"
+      bedtime: "19:30"
+      wake: "6:30-7:00"
+
+  pets:
+    buddy:
+      type: dog
+      age: 3
+      walks_per_day: 4
+      walk_schedule:
+        morning:
+          time: "~6:30"
+          who: "Alex (back before Jordan leaves at 7:15)"
+        midday:
+          who: "Dog walker (Tue-Thu only); must be manually assigned Mon/Fri/Sat/Sun"
+        evening:
+          time: "17:00-19:00"
+          who: "whoever is home"
+        night:
+          time: "~22:00"
+          who: "Jordan (every night, no exceptions)"
+      dog_walker:
+        name: "Dog Walker"
+        days: [tuesday, wednesday, thursday]
+        duration_min: 30
+
+recurring:
+  cleaner:
+    role: "Cleaner"
+    frequency: "every other Wednesday morning"
+    reference_date: "2026-04-08"  # a known cleaner Wednesday
+
+  coop_shifts:
+    alex:
+      frequency_weeks: 6
+      day: saturday
+      start_date: "2026-04-11"
+      time: "9:30"
+    jordan:
+      frequency_weeks: 6
+      day: sunday
+      start_date: "2026-04-19"
+      time: "9:30"
+      notes: "Currently behind on shifts. Remind weekly in Sunday schedule."
+
+dinner:
+  defaults:
+    monday: "Jordan"
+    tuesday: "Alex (chicken)"
+  negotiable: [wednesday, thursday, friday, saturday, sunday]
+  constraint: "All dinners must be assigned before Alex grocery shops on Sat/Sun"
+
+schedule_output:
+  # Format options: "bullets" (day headers with bullet points), "person" (grouped by person), "grid" (compact table)
+  format: "bullets"
+  group_name: "Family Chat"
+  pin: true
+  emoji_map:
+    swim: "\U0001F3CA"
+    pool: "\U0001F3B1"
+    forest_school: "\U0001F333"
+    dog: "\U0001F436"
+    gym: "\U0001F3CB"
+    chicken: "\U0001F414"
+    cleaner: "\U0001F9F9"
+    urgent: "\U0000203C"
+    coop: "\U0001F6D2"
