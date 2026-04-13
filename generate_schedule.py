@@ -49,9 +49,17 @@ def load_config() -> dict:
         return yaml.safe_load(f)
 
 
-def should_exclude_event(summary: str) -> bool:
-    """Check if a GCal event should be filtered out."""
-    for pattern in EXCLUDED_EVENT_PATTERNS:
+def should_exclude_event(summary: str, config: dict | None = None) -> bool:
+    """Check if a GCal event should be filtered out.
+
+    Uses built-in patterns plus any additional patterns from config.yaml
+    under schedule_output.excluded_events.
+    """
+    patterns = list(EXCLUDED_EVENT_PATTERNS)
+    if config:
+        extra = config.get("schedule_output", {}).get("excluded_events", [])
+        patterns.extend(extra)
+    for pattern in patterns:
         if re.search(pattern, summary):
             return True
     return False
@@ -179,7 +187,7 @@ def compute_week_context(config: dict, week_monday: datetime.date) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def pull_gcal_events(week_monday: datetime.date) -> dict[str, list[dict]] | None:
+def pull_gcal_events(week_monday: datetime.date, config: dict | None = None) -> dict[str, list[dict]] | None:
     """Attempt to fetch GCal events. Returns None if not configured."""
     cal_ids = {
         "personal": os.getenv("GCAL_PERSONAL_ID"),
@@ -200,7 +208,7 @@ def pull_gcal_events(week_monday: datetime.date) -> dict[str, list[dict]] | None
     for day in events_by_day:
         events_by_day[day] = [
             e for e in events_by_day[day]
-            if not should_exclude_event(e.get("summary", ""))
+            if not should_exclude_event(e.get("summary", ""), config)
         ]
 
     return events_by_day
@@ -796,7 +804,7 @@ def main():
         try:
             get_credentials()  # authenticate first
             print("  Authenticated.")
-            gcal_events = pull_gcal_events(target_monday)
+            gcal_events = pull_gcal_events(target_monday, config)
             if gcal_events:
                 total = sum(len(v) for v in gcal_events.values())
                 print(f"  Found {total} events across the week.")

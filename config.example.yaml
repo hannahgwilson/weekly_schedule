@@ -105,6 +105,10 @@ schedule_output:
   format: "bullets"
   group_name: "Family Chat"
   pin: true
+  # Additional event patterns to filter from GCal (regex, on top of built-in filters)
+  # Example: filter out a specific person's name, a recurring hold, etc.
+  excluded_events:
+    - "(?i)dr\\.?\\s*smith"  # example: filter out a therapist by name
   emoji_map:
     swim: "\U0001F3CA"
     pool: "\U0001F3B1"
