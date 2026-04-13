@@ -34,7 +34,8 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your API keys and calendar IDs
 
-# 4. Customize config.yaml with your household details
+# 4. Copy config.example.yaml to config.yaml and customize for your household
+cp config.example.yaml config.yaml
 # Edit config.yaml with your family members, schedules, recurring events
 
 # 5. Run it
@@ -120,7 +121,8 @@ Configurable via `config.yaml` → `schedule_output.format`:
 | `generate_schedule.py` | Main script + Claude prompt + scheduling logic | Yes |
 | `gcal.py` | Google Calendar integration | Yes |
 | `open_brain.py` | Open Brain MCP integration | Yes |
-| `config.yaml` | Household rules, schedules, recurring events | Yes |
+| `config.example.yaml` | Example household config (copy to `config.yaml`) | Yes |
+| `config.yaml` | Your household config | **No** (gitignored) |
 | `.env` | API keys, calendar IDs, Open Brain URL | **No** (gitignored) |
 | `.env.example` | Template for `.env` | Yes |
 | `credentials.json` | Google OAuth client secret | **No** (gitignored) |
