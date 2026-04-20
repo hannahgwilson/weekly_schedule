@@ -15,8 +15,26 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 TOKEN_PATH = Path(__file__).parent / "token.json"
 
 
+def _run_oauth_flow():
+    """Run the full OAuth browser flow to get new credentials."""
+    creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
+    if not Path(creds_path).exists():
+        raise FileNotFoundError(
+            f"Google credentials file not found at '{creds_path}'.\n"
+            "Download it from Google Cloud Console > APIs & Services > Credentials.\n"
+            "See README.md for setup instructions."
+        )
+    flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
+    return flow.run_local_server(port=0)
+
+
 def get_credentials():
-    """Get or refresh Google OAuth credentials."""
+    """Get or refresh Google OAuth credentials.
+
+    Handles expired tokens by refreshing automatically. If the refresh token
+    itself is revoked or invalid, deletes the stale token and re-authenticates
+    via browser.
+    """
     creds = None
 
     if TOKEN_PATH.exists():
@@ -24,17 +42,14 @@ def get_credentials():
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except Exception as exc:
+                print(f"  Token refresh failed ({exc}). Re-authenticating...")
+                TOKEN_PATH.unlink(missing_ok=True)
+                creds = _run_oauth_flow()
         else:
-            creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
-            if not Path(creds_path).exists():
-                raise FileNotFoundError(
-                    f"Google credentials file not found at '{creds_path}'.\n"
-                    "Download it from Google Cloud Console > APIs & Services > Credentials.\n"
-                    "See README.md for setup instructions."
-                )
-            flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
-            creds = flow.run_local_server(port=0)
+            creds = _run_oauth_flow()
 
         TOKEN_PATH.write_text(creds.to_json())
 

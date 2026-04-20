@@ -12,11 +12,13 @@ The tool is configured via `config.yaml`. The example configuration uses these p
 
 | Person | Role | Key Constraints |
 |--------|------|-----------------|
-| Alex (A) | Primary scheduler | Office Mon–Thu 9–5:30, configurable commute. **Home on Fridays.** Gym 3x/week+ (Mon lift after work, run 1–2x midweek, gym both weekend days). Coop shift every 6th Saturday. |
+| Alex (A) | Primary scheduler | Office Mon–Thu 9–5:30, configurable commute. **Home on Fridays.** Gym 3x/week+ (Mon lift after work, run 1–2x midweek, gym both weekend days). **One workout per day max.** Coop shift every 6th Saturday. |
 | Jordan (J) | Partner/Teacher | Leaves 7:15am, home ~5pm. Pool Thu (straight from school); occasionally Tue (usually home first). Squash 1–2x/week, typically one weekend day — added to shared GCal. Coop shift every 6 Sundays. 10pm dog walk every night. |
 | Sam (S) | Au pair | 45hrs/week. Mon 9–6 (9hrs), Tue 8–5 (9hrs), Wed 8–5 (9hrs), Thu 8–6:30 (10.5hrs), Fri balance (7.5hrs). Schedule is stable week-to-week; changes are lasting, not one-offs. Any hours beyond scheduled end times are overtime ("babysitting 🐣") requiring explicit ask. |
 | Baby | Toddler (18mo) | Swim Tue 11am (30min). Forest school Thu 9–10:30am. Nap ~1–3:30/4pm daily. Bed 7:30pm. Wake 6:30–7am. |
 | Buddy | Dog (3yo) | 4 walks/day. A walks at 6:30am. Dog walker Tue–Thu (30min midday). J confirmed for 10pm walk every night. |
+
+> **Note:** These are placeholder names. The system prompt uses template variables (`{primary}`, `{pa}`, `{partner}`, `{ra}`, etc.) that are filled from `config.yaml` at runtime — so the schedule output always uses your actual household names.
 
 ---
 
@@ -129,6 +131,8 @@ Filtered from work calendar: "ask before scheduling" blocks (commute/family hold
 | Friday | Morning | If no early meetings. Au pair starting early helps. |
 | Weekend (2x) | Flexible | Lift 1 day, run/gym 1 day |
 
+**Hard rule: one workout per day.** If gym-before-work is scheduled, do not also schedule gym-after-work that same day.
+
 ---
 
 ## Validation Criteria ("Good Schedule")
@@ -150,11 +154,19 @@ Filtered from work calendar: "ask before scheduling" blocks (commute/family hold
 
 Sent to the family WhatsApp group. Primary scheduler pins it each week.
 
+**All formats start with a "Quick notes before the week" summary section** — 2-4 bullet points with key context (coop status, meal plan changes, follow-ups, Open Brain highlights) before the daily breakdown. This gives the family context at a glance.
+
 **Configurable via `config.yaml` → `schedule_output.format`**. Three options:
 
 ### `bullets` (default — current preference)
-Day headers with bullet points. Each bullet is one fact. Blank lines between days for readability. Easiest to scan on a phone.
+"Quick notes" summary, then day headers with bullet points. Each bullet is one fact. Blank lines between days for readability. Easiest to scan on a phone.
 ```
+**Quick notes before the week:**
+– J caught up on coop shifts — no nudge needed 👍
+– Chicken moved to Sunday this week — Tuesday is leftovers
+
+---
+
 Mon:
 • S: 9-6
 • A gym after work 🏋️, home ~7:15
@@ -255,6 +267,10 @@ Compact text table with columns: day, S hours, dinner, notes. Most information-d
 - [x] J pool Tuesday: explicit departure time tied to A's ETA
 - [x] Family dinner ineligible when A has late meetings (home after 7pm)
 - [x] S's Friday hours calculated correctly (8-3:30 = 7.5hrs, not 8-1:30)
+- [x] One workout per day max — no double gym sessions
+- [x] "Quick notes before the week" summary section in all output formats
+- [x] Template-based name replacement (no fragile regex on single letters)
+- [x] GCal auto-reauth when refresh token expires (no manual `rm token.json`)
 - [ ] Tighten Claude output to suppress reasoning/deliberation in schedule text
 - [ ] Test with different weeks to verify edge cases
 - [ ] Validate against example schedules in `docs/example_schedules`

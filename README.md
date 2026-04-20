@@ -9,6 +9,7 @@ Built for families juggling childcare, work commutes, caregiver handoffs, meals,
 - **Pulls 3 Google Calendars** (personal, family, work) and filters out noise (birthdays, therapy, hold blocks)
 - **Pulls Open Brain notes** — meal plans, family events, schedule changes captured during the week
 - **Analyzes work schedules** to compute ETA home each day and identify gym windows
+- **Opens with a "Quick notes" summary** — key context for the family before the daily breakdown
 - **Validates caregiver handoffs** — cross-checks end times vs. parent ETAs to catch coverage gaps
 - **Detects scheduling conflicts** — ensures no person is double-booked
 - **Computes babysitting arrival** — 45 minutes before event time when both parents are out
@@ -67,7 +68,7 @@ The script will:
 5. **OAuth consent screen:** Add your Gmail as a test user
 6. Find your calendar IDs (Google Calendar > Settings > calendar > "Integrate calendar" > Calendar ID)
 7. Add to `.env`: `GCAL_PERSONAL_ID`, `GCAL_FAMILY_ID`, `GCAL_WORK_ID`
-8. First run opens a browser for OAuth. After authorizing, `token.json` is saved locally.
+8. First run opens a browser for OAuth. After authorizing, `token.json` is saved locally. If the token later expires, the script will automatically re-open the browser to re-authenticate.
 
 **Work calendar note:** If your work Google account is separate, share the work calendar with your personal Gmail (Work GCal > Settings > Share with specific people > add your personal email with "See all event details").
 
@@ -89,7 +90,7 @@ Edit `config.yaml` with your family's details:
 - **Dinner defaults**: who cooks which nights
 - **Output format**: bullets, person view, or grid
 
-The system prompt in `generate_schedule.py` contains the scheduling intelligence (handoff validation, conflict detection, gym logic, etc.). You may want to adjust it to match your household's specific rules.
+The system prompt in `generate_schedule.py` uses template variables (`{primary}`, `{pa}`, `{partner}`, `{ra}`, etc.) that are automatically filled from your `config.yaml` at runtime. You may also want to adjust the scheduling rules (handoff validation, conflict detection, gym logic, etc.) to match your household.
 
 ### Sunday Auto-Launch (macOS)
 
