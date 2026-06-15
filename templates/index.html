@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Weekly schedule</title>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --panel: #fff;
+      --border: #e5e1d6;
+      --text: #2b2b2b;
+      --muted: #6b6b6b;
+      --accent: #6b5b3d;
+      --accent-hover: #5a4d33;
+      --ok: #2f7d3e;
+      --err: #b3261e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem 1rem;
+      line-height: 1.45;
+    }
+    main { max-width: 720px; margin: 0 auto; }
+    h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.25rem 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .panel h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: vertical;
+      background: #fdfcf7;
+    }
+    textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    .hint { color: var(--muted); font-size: 0.85rem; margin: 0.5rem 0 0.75rem; }
+    .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      padding: 0.6rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover { background: var(--accent-hover); }
+    button[disabled] { background: #b8ad94; cursor: progress; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 0.85em;
+      height: 0.85em;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 0.4em;
+      vertical-align: -2px;
+    }
+    button.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+    button.secondary:hover { background: #f3eee2; }
+    input[type="date"] {
+      padding: 0.45rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      background: #fdfcf7;
+    }
+    .flash {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .flash.ok { background: #e8f3ea; border: 1px solid #b9d9bf; color: var(--ok); }
+    .flash.err { background: #fbe9e7; border: 1px solid #f0c4be; color: var(--err); }
+    .captures { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+    .captures li { margin: 0.15rem 0; font-size: 0.9rem; color: var(--muted); }
+    pre.schedule {
+      background: #fdfcf7;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      max-height: 70vh;
+      overflow: auto;
+    }
+    .gen-row { justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Weekly schedule</h1>
+    <p class="sub">Capture notes → Open Brain. Generate when ready.</p>
+
+    {% if error %}
+      <div class="flash err">{{ error }}</div>
+    {% endif %}
+
+    {% if captured %}
+      <div class="flash ok">
+        Captured {{ captured|length }} thought{{ "s" if captured|length != 1 else "" }} to Open Brain.
+        <ul class="captures">
+          {% for c in captured %}<li>{{ c }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if entity_result %}
+      <div class="flash ok">
+        Processed {{ entity_result.processed }} thought{{ "s" if entity_result.processed != 1 else "" }} →
+        {{ entity_result.entities_created }} entit{{ "ies" if entity_result.entities_created != 1 else "y" }},
+        {{ entity_result.edges_created }} edge{{ "s" if entity_result.edges_created != 1 else "" }}
+        ({{ entity_result.succeeded }} ok, {{ entity_result.failed }} failed,
+        {{ entity_result.iterations }} worker call{{ "s" if entity_result.iterations != 1 else "" }};
+        stopped: {{ entity_result.stopped_reason }}).
+      </div>
+    {% endif %}
+
+    <section class="panel">
+      <h2>1. Notes</h2>
+      <form method="post" action="/capture" data-busy="Capturing…">
+        <textarea name="notes" placeholder="Type notes here. Separate distinct thoughts with a blank line.&#10;&#10;e.g.&#10;Chicken moved to Sunday — Tuesday is leftovers&#10;&#10;Ryan caught up on coop shifts">{{ notes }}</textarea>
+        <p class="hint">Each blank-line-separated block becomes one thought.</p>
+        <div class="row">
+          <button type="submit">Capture to Open Brain</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>2. Process thoughts → entities</h2>
+      <form method="post" action="/process-entities" data-busy="Processing… (can take a few min)">
+        <p class="hint">Drains the entity-extraction queue: runs the worker repeatedly with limit=3 until empty (max 20 calls). Also runs nightly at midnight ET via pg_cron.</p>
+        <div class="row">
+          <button type="submit">Process queue now</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>3. Generate schedule</h2>
+      <form method="post" action="/generate" data-busy="Generating… (30–60s)">
+        <div class="row gen-row">
+          <label>Week starting (Monday):
+            <input type="date" name="week" value="{{ week }}">
+          </label>
+          <button type="submit">Generate</button>
+        </div>
+        <p class="hint">Pulls GCal + Open Brain notes, then asks Claude. Usually 30–60 seconds.</p>
+      </form>
+    </section>
+
+    {% if schedule %}
+      <section class="panel">
+        <h2>Schedule</h2>
+        <pre class="schedule">{{ schedule }}</pre>
+      </section>
+    {% endif %}
+  </main>
+  <script>
+    // Disable submit + show spinner so the user knows it's working.
+    document.querySelectorAll('form[data-busy]').forEach(form => {
+      form.addEventListener('submit', () => {
+        const busy = form.dataset.busy || 'Working…';
+        form.querySelectorAll('button[type="submit"]').forEach(btn => {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner"></span>' + busy;
+        });
+      });
+    });
+  </script>
+</body>
+</html>

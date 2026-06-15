@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -65,8 +66,8 @@ def fetch_events(calendar_id: str, start: datetime.datetime, end: datetime.datet
         service.events()
         .list(
             calendarId=calendar_id,
-            timeMin=start.isoformat() + "Z",
-            timeMax=end.isoformat() + "Z",
+            timeMin=start.isoformat(),
+            timeMax=end.isoformat(),
             singleEvents=True,
             orderBy="startTime",
         )
@@ -98,8 +99,9 @@ def fetch_week_events(calendar_ids: dict[str, str], week_start: datetime.date) -
     Returns:
         Dict mapping day name (e.g. "monday") to list of events on that day.
     """
-    start_dt = datetime.datetime.combine(week_start, datetime.time.min)
-    end_dt = datetime.datetime.combine(week_start + datetime.timedelta(days=7), datetime.time.min)
+    local_tz = ZoneInfo("America/New_York")
+    start_dt = datetime.datetime.combine(week_start, datetime.time.min, tzinfo=local_tz)
+    end_dt = datetime.datetime.combine(week_start + datetime.timedelta(days=7), datetime.time.min, tzinfo=local_tz)
 
     all_events = []
     for label, cal_id in calendar_ids.items():

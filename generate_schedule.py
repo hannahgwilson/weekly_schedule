@@ -23,6 +23,7 @@ import pyperclip
 import yaml
 from dotenv import load_dotenv
 
+from db import load_household_from_db
 from gcal import fetch_week_events, get_credentials
 from open_brain import display_open_brain_notes, fetch_open_brain_notes, format_open_brain_for_prompt
 
@@ -45,8 +46,28 @@ EXCLUDED_EVENT_PATTERNS = [
 
 
 def load_config() -> dict:
+    """Load household data from Supabase, merged with app-behavior yaml config.
+
+    Household, recurring, and dinner sections come from Supabase via db.py.
+    App-behavior settings (schedule_output, emoji_map, excluded_events,
+    group_name, format) come from config.yaml. The yaml's `dinner.negotiable`
+    and `dinner.constraint` keys are also merged in if present, since those
+    aren't stored in the DB.
+    """
     with open(CONFIG_PATH) as f:
-        return yaml.safe_load(f)
+        yaml_cfg = yaml.safe_load(f) or {}
+
+    db_cfg = load_household_from_db()
+
+    # Merge DB household data with yaml app-behavior settings.
+    merged = {**yaml_cfg, **db_cfg}
+
+    # Preserve yaml's dinner.negotiable / constraint if DB doesn't have them.
+    yaml_dinner = yaml_cfg.get("dinner", {}) or {}
+    db_dinner = db_cfg.get("dinner", {}) or {}
+    merged["dinner"] = {**yaml_dinner, **db_dinner}
+
+    return merged
 
 
 def should_exclude_event(summary: str, config: dict | None = None) -> bool:
@@ -422,6 +443,59 @@ SYSTEM_PROMPT_BASE = """\
 You are a household schedule assistant. Your job is to generate a weekly schedule
 that gets sent to a WhatsApp group chat.
 
+OUTPUT DISCIPLINE — CRITICAL:
+Before writing a single line of output, silently work through ALL scheduling decisions in your head:
+conflicts, handoffs, gym timing, dinner assignments, babysitting flags. Resolve every conflict internally.
+Then output ONLY the final schedule — no reasoning, no corrections, no "wait", no "actually", no
+self-commentary, no strike-throughs, no revised versions. If you catch yourself writing a reasoning
+sentence mid-schedule, stop and delete it. The family reads this in WhatsApp; they see only decisions,
+not deliberation. ONE pass, final output only.
+
+NOTES OVERRIDE DEFAULTS:
+ADDITIONAL NOTES and OPEN BRAIN NOTES override every fixed rule below — recurring events,
+dinner defaults, gym defaults, work-schedule assumptions. If notes say bookclub is at H's
+this week (not R's), use H. If notes say chicken moves to Sunday, do not re-place it on Tue.
+If notes say someone is travelling, traveling parents do not have evening events, dinner
+duties, or gym slots that day. Defaults are the floor; notes are the ceiling.
+
+TRAVEL DAYS:
+If a person is travelling or away on a day they normally have a recurring entry (pool,
+bookclub, forest school drop-off, gym, etc.), OMIT that entry entirely. Do NOT include it
+with "likely skipped", "check with X", or "pre-flagged" hedges in the daily breakdown.
+If a heads-up is needed (e.g. R should tell their pool team), put it in the quick-notes
+section as a directed ask, not as a daily bullet.
+
+SIGNAL DENSITY — every bullet must earn its line:
+- NO filler bullets stating the absence of a thing ("No gym today", "No coverage gap",
+  "No babysitter needed", "Flexible day"). Just omit.
+- NO redundant parentheticals on dinner lines: write "{ra} dinner", NOT
+  "{ra} dinner (H out for book club)". The reason is already visible above the dinner line.
+- NO redundant parentheticals like "(M covering)" or "(R doing Wilson)" when the handoff
+  is already implied by the day's structure.
+- NO restating quick-notes content as a per-day bullet — if "M on overnight Thu-Sun" is
+  in quick notes, do not also write "M on overnight duty" under Thursday.
+- NO hour-math narration in daily entries (e.g. "M: standard Friday would be 8-3:30 but
+  covering — all hours overtime"). Hour totals belong in flags/asks if anywhere.
+- NO "TBD" lines. If the answer isn't in the inputs, omit the line.
+- Better 3 high-signal bullets than 7 padded ones.
+
+QUICK NOTES — ACTION-FIRST:
+The quick notes section is for things the family needs to ACT on, not status they can
+read off the daily breakdown below. Prioritize, in order:
+1. Directed asks ("@{partner}: cancel diapers for the week after next", "@{aupair}: LMK
+   what coop groceries you want by Thu AM").
+2. Big-picture context that affects multiple days (travel, illness, household-wide events).
+3. Things that diverge from the usual (modified {ma} schedule, chicken-night moved).
+DO NOT include status the schedule below already shows: "R caught up on coop shifts",
+"Chicken moved to Sun this week" (when Sun shows chicken anyway), "Cleaner coming Wed"
+(when Wed shows it). 2–4 bullets, max.
+
+SENSITIVE LIFE EVENTS — TONE:
+For job loss, illness, grief, breakups, family conflict, etc., DO NOT use celebratory
+framing, 🎉 emoji, or upbeat editorializing — even if the side effect is logistically
+positive ("schedules are open!"). State the scheduling-relevant fact plainly if needed,
+and otherwise leave it out. When unsure, omit from quick notes.
+
 NAMING CONVENTIONS:
 - {primary} = {pa}, {partner} = {ra}, {aupair} = {ma}, {primary} & {partner} together = {pa}+{ra}
 - Use these abbreviations consistently throughout the schedule.
@@ -450,7 +524,7 @@ HOUSEHOLD DAILY RHYTHM:
 CRITICAL RULES:
 1. {child} must have an adult ({pa}, {ra}, or {ma}) responsible for them at every moment (6:30am-7:30pm).
 2. {pet} gets 4 walks/day. {ra} always does 10pm. Only flag walks if something unusual needs to be arranged.
-3. Every dinner Mon-Sun must have a named cook ({pa} or {ra}). See DINNER RULES.
+3. Every dinner Mon-Sun must have a named cook ({pa} or {ra}) — EXCEPT when {pa}+{ra} are both travelling/away that day. On travel days, omit the dinner line entirely (do NOT write "no dinner assignment"). See DINNER RULES.
 4. {pa} commutes to office Mon-Thu only. If anything requires them home before 6:30pm on a work day, flag it. {pa} is HOME on Fridays.
 5. {ma}'s BASE schedule is 45hrs/week (Mon 9-6 = 9hrs, Tue 8-5 = 9hrs, Wed 8-5 = 9hrs, Thu 8-6:30 = 10.5hrs, Fri = 7.5hrs to reach 45). Friday default is 8:00-3:30 (7.5hrs). Do NOT miscalculate — 8:00 to 1:30 is only 5.5hrs, NOT 7.5hrs. Any hours BEYOND their scheduled end time are "babysitting" — flag with 🐣 and explicit ask to @{aupair}.
 6. No coverage gaps — especially around {ma}'s start/end times and {pa}/{ra} transitions. See HANDOFF VALIDATION below.
@@ -475,18 +549,25 @@ BABYSITTING ARRIVAL RULE:
 If {ma} is babysitting for an event where {pa}+{ra} are both leaving, {ma} must arrive 45 MINUTES before the event start time. The 45 minutes already includes travel time for most local events. Example: event at 12:30 -> {ma} arrives by 11:45. If the calendar event has an address that is clearly more than 45 minutes away, add extra buffer on top.
 
 DINNER RULES:
+- Every day Mon-Sun needs a named cook UNLESS {pa}+{ra} are both travelling/away that day.
+  On travel days, omit the dinner bullet entirely.
 - Monday: {ra} (fixed)
-- Tuesday: {pa} — chicken (fixed)
+- Tuesday: {pa} — chicken (fixed, UNLESS {pa} has an evening event shortly after arriving home — in that case {ra} takes over chicken duty or it moves to another night. Flag the change.)
 - Wed-Sun: Assign {pa} or {ra} based on who is home and available.
   - If one parent has an evening event, assign the OTHER parent.
-  - If BOTH are going out (date night, dinner with friends), do NOT assign a cook — note the plan. That IS their dinner.
-  - Only mark as "TBD" if there truly isn't enough info.
+  - If BOTH have an out-of-home dinner (reservation, dinner with friends), that reservation
+    IS the dinner — name it ("Dinner out: Gage & Tollner 7pm 🍽️ {pa}+{ra}") and skip the
+    cook line. If the reservation is later cancelled, fall back to the day's default cook.
+  - Never write "TBD" or "no dinner assignment". Either name a cook, name an out-of-home
+    plan, or (travel only) omit.
+- Dinner bullets are bare: "{ra} dinner", "{pa} chicken 🐔". Do NOT add parentheticals
+  like "(H out for book club)" — the reason is already visible elsewhere in the day.
 
 FAMILY DINNER:
 - One night per week, everyone ({pa}, {ra}, {ma}) eats together at home. This is also when {pa}+{ma} do their weekly check-in.
 - ELIGIBLE DAYS: Monday, Tuesday, Wednesday, Thursday, or Sunday ONLY.
 - NEVER PLACE ON FRIDAY. NEVER PLACE ON SATURDAY. This is a hard rule with no exceptions.
-- Pick the night where {pa} and {ra} are BOTH home earliest with no evening conflicts. A night where {pa} has late meetings (home after 7pm) or evening events (happy hours, dinners) is NOT eligible — {pa} is not available for family dinner that night.
+- Pick the night where {pa} and {ra} are BOTH home earliest with no evening conflicts. A night where EITHER {pa} OR {ra} has an evening event (book club, happy hour, pool, dinners out, etc.) or {pa} has late meetings (home after 7pm) is NOT eligible. If someone has to leave by 6:30pm, there is no time for family dinner even if they arrive at 6:15.
 - Label it "family dinner 🍽️👨‍👩‍👦" in the schedule.
 - If placed on a weekday, {ma} is already home for their regular hours — no overtime needed if it falls within their schedule. If placed on Sunday, {ma}'s time is babysitting/overtime and must be flagged.
 
@@ -498,7 +579,6 @@ TONE:
 - Casual, warm, efficient — like a group text from a competent parent, not a corporate memo.
 - Use emojis naturally but don't overdo it: 🏊 swim, 🎱 pool, 🌳 forest school, 🏋️ gym, 🐔 chicken, 🧹 cleaner, ‼️ urgent, 🛒 coop, 🐣 babysitting
 - Do NOT narrate childcare coverage or dog walks unless something unusual needs flagging.
-- Do NOT show your reasoning or deliberation in the output. No "actually", "wait", "let's place it on..." — just state the final decision.
 """
 
 FORMAT_BULLETS = """\
@@ -655,6 +735,15 @@ def build_user_prompt(config: dict, context: dict, gcal_events: dict | None, man
 
     parts.append(f"Generate the weekly schedule for the week of {context['week_monday']}.\n")
 
+    # Anchor day-of-week to actual date so Claude doesn't drift (e.g. labelling Wed with Thursday's date).
+    week_start = datetime.date.fromisoformat(context["week_monday"])
+    day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    parts.append("WEEK DATES (use these EXACT day/date pairings in every day header):")
+    for i, name in enumerate(day_names):
+        d = week_start + datetime.timedelta(days=i)
+        parts.append(f"  {name} = {d.strftime('%b %-d')} ({d.isoformat()})")
+    parts.append("")
+
     # Au pair's schedule with explicit hour accounting
     au_pair_config = config["household"]["adults"][au_pair]
     caregiver_hours = context["caregiver_hours"]
@@ -755,7 +844,11 @@ def build_user_prompt(config: dict, context: dict, gcal_events: dict | None, man
                     time_str = ""
                     if not e["all_day"]:
                         start_time = e["start"].split("T")[1][:5] if "T" in e["start"] else ""
-                        time_str = f" at {start_time}" if start_time else ""
+                        end_time = e["end"].split("T")[1][:5] if "T" in e.get("end", "") else ""
+                        if start_time and end_time:
+                            time_str = f" {start_time}-{end_time}"
+                        elif start_time:
+                            time_str = f" at {start_time}"
                     event_strs.append(f"{e['summary']}{time_str} [{e.get('calendar_label', '')}]")
                 parts.append(f"  {day.title()}: {'; '.join(event_strs)}")
         if not has_events:
@@ -809,14 +902,25 @@ def generate_with_claude(system: str, user_prompt: str) -> str:
 
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate weekly household schedule")
+    parser.add_argument("date", nargs="?", help="Monday of target week (YYYY-MM-DD). Defaults to upcoming Monday.")
+    parser.add_argument("--notes", "-n", metavar="FILE", help="Read manual notes from FILE instead of prompting interactively.")
+    args = parser.parse_args()
+
     print("\n🗓️  Weekly Schedule Generator\n")
 
     # Determine target week
-    if len(sys.argv) > 1:
+    if args.date:
         try:
-            target_monday = datetime.date.fromisoformat(sys.argv[1])
+            parts = args.date.split("-")
+            if len(parts) == 3:
+                target_monday = datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+            else:
+                target_monday = datetime.date.fromisoformat(args.date)
         except ValueError:
-            print(f"Invalid date: {sys.argv[1]}. Use YYYY-MM-DD format.")
+            print(f"Invalid date: {args.date}. Use YYYY-MM-DD format.")
             sys.exit(1)
     else:
         target_monday = next_monday()
@@ -887,20 +991,28 @@ def main():
         print("\n  Open Brain not configured — skipping. Add OPEN_BRAIN_MCP_URL to .env to enable.")
 
     # Manual notes (after GCal and Open Brain so user can see everything first)
-    print("\nAdd any notes for this week (dinner plans, events, schedule changes).")
-    print("Type your notes, then press Enter twice when done (or just Enter to skip):\n")
-    lines = []
-    while True:
-        line = input()
-        if line == "":
-            if lines and lines[-1] == "":
-                break
-            if not lines:
-                break
-            lines.append(line)
-        else:
-            lines.append(line)
-    manual_notes = "\n".join(lines).strip()
+    if args.notes:
+        notes_path = Path(args.notes)
+        if not notes_path.exists():
+            print(f"\nError: notes file not found: {args.notes}")
+            sys.exit(1)
+        manual_notes = notes_path.read_text().strip()
+        print(f"\nLoaded notes from {args.notes} ({len(manual_notes.splitlines())} lines).")
+    else:
+        print("\nAdd any notes for this week (dinner plans, events, schedule changes).")
+        print("Type your notes, then press Enter twice when done (or just Enter to skip):\n")
+        lines = []
+        while True:
+            line = input()
+            if line == "":
+                if lines and lines[-1] == "":
+                    break
+                if not lines:
+                    break
+                lines.append(line)
+            else:
+                lines.append(line)
+        manual_notes = "\n".join(lines).strip()
 
     # Generate
     output_format = config.get("schedule_output", {}).get("format", "bullets")

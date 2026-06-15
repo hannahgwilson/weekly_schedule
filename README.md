@@ -35,9 +35,11 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your API keys and calendar IDs
 
-# 4. Copy config.example.yaml to config.yaml and customize for your household
-cp config.example.yaml config.yaml
-# Edit config.yaml with your family members, schedules, recurring events
+# 4. Run the setup wizard to generate your config.yaml
+python setup.py
+
+# OR copy the example and edit manually:
+# cp config.example.yaml config.yaml
 
 # 5. Run it
 python generate_schedule.py                # next week (auto-detects Monday)
@@ -81,7 +83,15 @@ If you use [Open Brain](https://github.com/NateBJones-Projects/OB1) for personal
 
 ### Customizing for Your Household
 
-Edit `config.yaml` with your family's details:
+The easiest way to get started is the setup wizard:
+
+```bash
+python setup.py
+```
+
+It walks you through each section — adults, children, pets, recurring events, dinner rules, and output preferences — and generates a `config.yaml` tailored to your household. You can also copy `config.example.yaml` and edit manually.
+
+Your `config.yaml` includes:
 - **Adults**: names, roles, work hours, commute, activities
 - **Children**: age, classes, nap/bedtime
 - **Pets**: walk schedule, dog walker days
@@ -119,6 +129,7 @@ Configurable via `config.yaml` → `schedule_output.format`:
 
 | File | Purpose | Committed? |
 |------|---------|------------|
+| `setup.py` | Interactive setup wizard — generates `config.yaml` | Yes |
 | `generate_schedule.py` | Main script + Claude prompt + scheduling logic | Yes |
 | `gcal.py` | Google Calendar integration | Yes |
 | `open_brain.py` | Open Brain MCP integration | Yes |
