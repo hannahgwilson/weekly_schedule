@@ -77,7 +77,7 @@ The script will:
 ### Open Brain (Optional)
 If you use [Open Brain](https://github.com/NateBJones-Projects/OB1) for personal knowledge management, the generator can auto-pull recent notes (meal plans, schedule changes, family events) and include them as context.
 
-1. Set up Open Brain per the [OB1 guide](https://promptkit.natebjones.com/20260224_uq1_guide_main)
+1. Set up Open Brain per the [getting-started guide](https://github.com/NateBJones-Projects/OB1/blob/main/docs/01-getting-started.md)
 2. Add your MCP URL to `.env` as `OPEN_BRAIN_MCP_URL`
    - Format: `https://YOUR_PROJECT_REF.supabase.co/functions/v1/open-brain-mcp?key=YOUR_ACCESS_KEY`
 
