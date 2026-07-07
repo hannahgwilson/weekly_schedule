@@ -40,6 +40,42 @@ Views:
   - **Output settings** — default format, WhatsApp group name, excluded-event regexes, and the keyword→emoji map.
 - **History** — re-open previously generated schedules without regenerating (optional; requires the `schedule_runs` migration).
 
+## Walkthrough
+
+The app is a single page with a sidebar of the four views and a shared week-picker in the top bar:
+
+```
+┌───────────────┬─────────────────────────────────────────────┐
+│  🗓  Weekly    │  Run                     Week of (Mon) [▾]   │
+│               ├─────────────────────────────────────────────┤
+│  ▶  Run       │  Generate the schedule                       │
+│  ▦  Calendar  │   Format:  [ Bullets ] By person   Grid      │
+│  ⚙  Config    │   [ ▶ Run schedule ]                         │
+│  🕘 History   │                                              │
+│               │  This week's notes                           │
+│               │   ┌───────────────────────────────────────┐  │
+│               │   │ Chicken moved to Sunday — leftovers Tue│  │
+│               │   └───────────────────────────────────────┘  │
+│               │   [ Capture to Open Brain ]  [ Process → ]    │
+│               │                                              │
+│               │  Schedule                          ⧉ Copy    │
+│               │   ⚑ 2 flags & asks                            │
+│               │   📆 Weekly schedule 📆  …                     │
+└───────────────┴─────────────────────────────────────────────┘
+```
+
+A typical Sunday-night run:
+
+1. **Pick the week** in the top-bar date picker (defaults to the upcoming Monday) — it's shared across every view.
+2. **Jot this week's changes** in the notes box ("swim moved to Thursday", "partner has a work dinner Wed") and hit **Capture to Open Brain** so they persist as context for this and future runs.
+3. **Choose a format** — *Bullets* (best on a phone), *By person*, or *Grid* — and click **Run schedule**. The app pulls your three Google Calendars, analyzes the work calendar for ETA-home and gym windows, folds in the Open Brain notes, and asks Claude to assemble the week (~30–60s).
+4. **Scan the flag chips.** Anything that needs a human — a coverage gap, overtime ask, or double-book — is lifted out of the schedule into a highlighted **⚑ flags & asks** strip so it can't get buried.
+5. **Copy to clipboard** and paste into the family WhatsApp group. Done.
+
+Behind the scenes, the **Calendar** view is a 7-day grid of the same events (each deep-linking back to Google Calendar), and the **Configuration** view is where you keep the household accurate over time — editing work schedules, swapping the work calendar when a job changes, and adding/removing people, pets, and dinner defaults, all without touching YAML or the database by hand.
+
+> Want to add your own screenshots for a post? Run the app, then capture each view — but blur or swap the household panel first, since it renders real names.
+
 ## Architecture
 
 | Layer | Where it lives |
