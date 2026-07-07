@@ -23,31 +23,45 @@ async def _fetch_all(mcp_url: str, week_monday: datetime.date) -> list[Any]:
     week_label = f"{week_monday.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')}"
 
     results = []
-    async with streamablehttp_client(mcp_url) as (read_stream, write_stream, _):
-        async with ClientSession(read_stream, write_stream) as session:
-            await session.initialize()
+    try:
+        async with streamablehttp_client(mcp_url) as (read_stream, write_stream, _):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
 
-            # Query 1: Recent thoughts (last 7 days)
-            try:
-                result = await session.call_tool("list_thoughts", {"days": 7, "limit": 20})
-                results.append(result)
-            except Exception as exc:
-                print(f"  Warning: list_thoughts failed: {exc}")
-
-            # Query 2+: Semantic searches for upcoming week content
-            search_queries = [
-                f"week of {week_label}",
-                "meal plan dinner recipes",
-                "schedule changes travel visitors events",
-            ]
-            for query in search_queries:
+                # Query 1: Recent thoughts (last 7 days)
                 try:
-                    result = await session.call_tool(
-                        "search_thoughts", {"query": query, "limit": 10}
-                    )
+                    result = await session.call_tool("list_thoughts", {"days": 7, "limit": 20})
                     results.append(result)
                 except Exception as exc:
-                    print(f"  Warning: search '{query}' failed: {exc}")
+                    print(f"  Warning: list_thoughts failed: {exc}")
+
+                # Query 2+: Semantic searches for upcoming week content
+                search_queries = [
+                    f"week of {week_label}",
+                    "meal plan dinner recipes",
+                    "schedule changes travel visitors events",
+                ]
+                for query in search_queries:
+                    try:
+                        result = await session.call_tool(
+                            "search_thoughts", {"query": query, "limit": 10}
+                        )
+                        results.append(result)
+                    except Exception as exc:
+                        print(f"  Warning: search '{query}' failed: {exc}")
+    except Exception as exc:
+        # The MCP transport uses an internal TaskGroup; on connection close it can raise
+        # an ExceptionGroup even after all queries completed successfully. If we have
+        # results, the teardown error is harmless — don't surface it to the caller.
+        if not results:
+            # Unwrap nested ExceptionGroups down to the original error so the
+            # caller sees something diagnosable.
+            def _unwrap(e):
+                inner = getattr(e, "exceptions", None)
+                if inner:
+                    return _unwrap(inner[0])
+                return e
+            raise _unwrap(exc) from None
 
     return results
 
@@ -110,6 +124,52 @@ def _parse_thoughts(result: Any) -> list[dict]:
                 thoughts.append({"text": part})
 
     return thoughts
+
+
+async def _capture_all(mcp_url: str, contents: list[str]) -> list[Any]:
+    """Capture multiple thoughts in a single MCP session."""
+    from mcp import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    results: list[Any] = []
+    try:
+        async with streamablehttp_client(mcp_url) as (read_stream, write_stream, _):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                for content in contents:
+                    result = await session.call_tool("capture_thought", {"content": content})
+                    results.append(result)
+    except Exception as exc:
+        # Same teardown quirk as _fetch_all: an ExceptionGroup may be raised on
+        # session close even after all calls succeeded. If we have results,
+        # the teardown error is harmless.
+        if len(results) < len(contents):
+            def _unwrap(e):
+                inner = getattr(e, "exceptions", None)
+                if inner:
+                    return _unwrap(inner[0])
+                return e
+            raise _unwrap(exc) from None
+    return results
+
+
+def capture_thoughts(contents: list[str]) -> list[str]:
+    """Capture a batch of thoughts to Open Brain. Returns confirmation strings."""
+    mcp_url = os.getenv("OPEN_BRAIN_MCP_URL")
+    if not mcp_url:
+        raise RuntimeError("OPEN_BRAIN_MCP_URL not set in environment")
+
+    results = asyncio.run(_capture_all(mcp_url, contents))
+    confirmations: list[str] = []
+    for r in results:
+        text = ""
+        if hasattr(r, "content"):
+            for block in r.content:
+                if hasattr(block, "text"):
+                    text = block.text
+                    break
+        confirmations.append(text or "(captured)")
+    return confirmations
 
 
 def fetch_open_brain_notes(week_monday: datetime.date) -> list[dict]:

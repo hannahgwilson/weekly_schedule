@@ -213,6 +213,7 @@ Compact text table with columns: day, S hours, dinner, notes. Most information-d
 
 ### Phase 1 — MVP (AI-Assisted) ← CURRENT
 - Local Python script on macOS
+- Interactive setup wizard (`setup.py`) generates personalized `config.yaml`
 - macOS launchd trigger at **Sunday 1pm** (toddler nap time)
 - Pulls GCal events, analyzes work calendar, prompts for notes
 - Claude API (claude-sonnet-4-6) generates schedule with gym suggestions

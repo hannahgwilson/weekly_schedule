@@ -16,4 +16,11 @@ venv/
 # IDE
 .vscode/
 .idea/
+
+# User household data (never commit — contains real names/schedules)
 config.yaml
+*.test.yaml
+notes_week_*.txt
+
+# Supabase CLI local state
+supabase/.temp/
