@@ -1,8 +1,15 @@
 # Weekly Schedule Generator
 
-AI-assisted weekly household schedule generator. Pulls Google Calendar events, fetches notes from [Open Brain](https://github.com/NateBJones-Projects/OB1), analyzes work schedules, and generates a WhatsApp-ready family schedule using Claude — from the command line or a small web app.
+An integrated weekly scheduler that generates a quick, shareable plan for the week — one message the whole family and your caregivers can rally around. It juggles adult work and gym schedules, social commitments, and kids' activities, and assigns dinner duty, so every day everyone knows what they're responsible for and when — instead of it all living in one parent's head.
 
-Built for families juggling childcare, work commutes, caregiver handoffs, meals, activities, and recurring chores — the kind of coordination that usually lives in one parent's head.
+It:
+
+1. **Pulls from everything that matters** — an [Open Brain](https://github.com/NateBJones-Projects/OB1) knowledge graph (a custom, AI-based note system), your work and personal Google Calendars, and configurable settings for the things that never make it into a calendar (caregiver hours, dog-walking schedules).
+2. **Reasons about commutes and hand-offs** — it factors in commute time and caregiver hand-offs, so you're not texting your partner at noon to figure out who's grabbing the CSA and who's picking the kid up from swim.
+3. **Prompts for upcoming babysitting needs** — surfaces when you'll need a sitter and the specific window, so you can get someone on the calendar early.
+4. **Handles recurring commitments directly** — add family dinner, the cleaner, and volunteer or coop shifts once, and they land on the right weeks automatically.
+
+The result is a clean, WhatsApp-ready schedule assembled by Claude, from the command line or a small web app.
 
 > **Heads up:** this is one app in a larger personal "second brain" system. Household data (people, pets, schedules, dinners) lives in **Supabase**, managed by the family-calendar extension of [Open Brain / OB1](https://github.com/NateBJones-Projects/OB1). The generator reads that data and layers Google Calendar + Claude on top. You can adapt it to your own household, but it expects the Supabase schema described below — it is not a zero-config clone-and-run demo.
 
