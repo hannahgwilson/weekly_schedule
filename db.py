@@ -396,6 +396,300 @@ def _build_dinner(defaults: list[dict]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Editable schedules (Configuration page writes)
+# ---------------------------------------------------------------------------
+
+
+def _household_details(c: dict) -> dict:
+    """Normalize the embedded household_details (object, list, or null) to a dict."""
+    hd = c.get("household_details")
+    if isinstance(hd, list):
+        return hd[0] if hd else {}
+    return hd if isinstance(hd, dict) else {}
+
+
+_ADULT_ROLES = ("primary_scheduler", "partner", "au_pair")
+
+
+def fetch_adult_schedules() -> list[dict]:
+    """Return each adult household member with contact_id + editable schedule fields.
+
+    Ordered primary → partner → au_pair. Au pair entries also carry a
+    ``caregiver_hours`` dict (day → {start_time, end_time, is_balance}).
+    """
+    sb = get_client()
+    contacts = _fetch_contacts(sb)
+    hours = _fetch_caregiver_hours(sb)
+
+    hours_by_contact: dict[str, list[dict]] = {}
+    for h in hours:
+        hours_by_contact.setdefault(h["contact_id"], []).append(h)
+
+    out: list[dict] = []
+    for c in contacts:
+        if "household_member" not in (c.get("tags") or []):
+            continue
+        hd = _household_details(c)
+        role = hd.get("role")
+        if role not in _ADULT_ROLES:
+            continue
+
+        entry: dict[str, Any] = {
+            "contact_id": c["id"],
+            "name": c["name"],
+            "role": role,
+            "work_days": list(hd.get("work_days") or []),
+            "work_start": _fmt_time(hd.get("work_start")),
+            "work_end": _fmt_time(hd.get("work_end")),
+            "commute_minutes": hd.get("commute_minutes"),
+            "leaves_home": _fmt_time(hd.get("leaves_home")),
+            "returns_home": _fmt_time(hd.get("returns_home")),
+            "weekly_hours_target": (
+                float(hd["weekly_hours_target"]) if hd.get("weekly_hours_target") is not None else None
+            ),
+            "schedule_stability_notes": hd.get("schedule_stability_notes"),
+        }
+        if role == "au_pair":
+            days: dict[str, dict] = {}
+            for h in hours_by_contact.get(c["id"], []):
+                days[h["day_of_week"]] = {
+                    "start_time": _fmt_time(h.get("start_time")),
+                    "end_time": _fmt_time(h.get("end_time")),
+                    "is_balance": bool(h.get("is_balance")),
+                }
+            entry["caregiver_hours"] = days
+        out.append(entry)
+
+    out.sort(key=lambda e: _ROLE_ORDER.get(e["role"], 99))
+    return out
+
+
+def _clean_time(v: Any) -> str | None:
+    """Accept 'HH:MM' / 'HH:MM:SS' / '' / None → 'HH:MM' or None."""
+    if v is None:
+        return None
+    s = str(v).strip()
+    return s[:5] if s else None
+
+
+def _clean_int(v: Any) -> int | None:
+    if v is None or v == "":
+        return None
+    return int(v)
+
+
+def _clean_num(v: Any) -> float | None:
+    if v is None or v == "":
+        return None
+    return float(v)
+
+
+_VALID_DAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
+def save_adult_schedule(entry: dict) -> None:
+    """Upsert one adult's editable schedule fields from a Configuration-page payload.
+
+    Requires ``contact_id`` and ``role``. Writes the household_details work fields,
+    and — for au pairs — each day's caregiver_daily_hours row. Raises ValueError on
+    a bad shape so the API can return a 400.
+    """
+    contact_id = entry.get("contact_id")
+    role = entry.get("role")
+    if not contact_id or role not in _ADULT_ROLES:
+        raise ValueError("Each adult needs a contact_id and a valid role.")
+
+    work_days = entry.get("work_days") or []
+    if not isinstance(work_days, list) or any(d not in _VALID_DAYS for d in work_days):
+        raise ValueError(f"work_days must be a list of weekday names, got {work_days!r}")
+
+    # Include role so a (theoretical) insert never nulls it; on update PostgREST only
+    # touches the columns present here, so other household_details fields are preserved.
+    payload = {
+        "contact_id": contact_id,
+        "user_id": _user_id(),
+        "role": role,
+        "work_days": work_days or None,
+        "work_start": _clean_time(entry.get("work_start")),
+        "work_end": _clean_time(entry.get("work_end")),
+        "commute_minutes": _clean_int(entry.get("commute_minutes")),
+        "leaves_home": _clean_time(entry.get("leaves_home")),
+        "returns_home": _clean_time(entry.get("returns_home")),
+        "weekly_hours_target": _clean_num(entry.get("weekly_hours_target")),
+        "schedule_stability_notes": (entry.get("schedule_stability_notes") or None),
+    }
+
+    sb = get_client()
+    sb.table("household_details").upsert(payload, on_conflict="contact_id").execute()
+
+    if role == "au_pair":
+        for day, h in (entry.get("caregiver_hours") or {}).items():
+            if day not in _VALID_DAYS:
+                raise ValueError(f"Invalid caregiver day: {day!r}")
+            is_balance = bool(h.get("is_balance"))
+            sb.table("caregiver_daily_hours").upsert(
+                {
+                    "contact_id": contact_id,
+                    "user_id": _user_id(),
+                    "day_of_week": day,
+                    "start_time": None if is_balance else _clean_time(h.get("start_time")),
+                    "end_time": None if is_balance else _clean_time(h.get("end_time")),
+                    "is_balance": is_balance,
+                },
+                on_conflict="contact_id,day_of_week",
+            ).execute()
+
+
+# ---------------------------------------------------------------------------
+# Editable household (people / pets / dinner defaults — Configuration page)
+# ---------------------------------------------------------------------------
+
+_PEOPLE_ROLES = ("primary_scheduler", "partner", "au_pair", "child")
+_PEOPLE_ORDER = {"primary_scheduler": 0, "partner": 1, "au_pair": 2, "child": 3}
+
+
+def fetch_household_editable() -> dict[str, Any]:
+    """People, pets, and dinner defaults in an edit-friendly shape for the UI."""
+    sb = get_client()
+    contacts = _fetch_contacts(sb)
+    pets = _fetch_pets(sb)
+    dinners = _fetch_dinner_defaults(sb)
+
+    people: list[dict] = []
+    for c in contacts:
+        if "household_member" not in (c.get("tags") or []):
+            continue
+        hd = _household_details(c)
+        people.append({
+            "contact_id": c["id"],
+            "name": c["name"],
+            "role": hd.get("role"),
+            "birth_date": c.get("birth_date"),
+        })
+    people.sort(key=lambda p: (_PEOPLE_ORDER.get(p["role"], 99), p["name"].lower()))
+
+    pet_list = [{
+        "id": p["id"],
+        "name": p["name"],
+        "species": p.get("species"),
+        "breed": p.get("breed"),
+        "walks_per_day": p.get("walks_per_day"),
+        "notes": p.get("notes"),
+    } for p in pets]
+    pet_list.sort(key=lambda p: (p["name"] or "").lower())
+
+    dinner: dict[str, dict] = {}
+    for d in dinners:
+        dinner[d["day_of_week"]] = {
+            "cook_id": d.get("cook_id"),
+            "dish_notes": d.get("dish_notes"),
+        }
+
+    # Only adults can be dinner cooks (children don't cook).
+    members = [{"contact_id": p["contact_id"], "name": p["name"]}
+               for p in people if p["role"] != "child"]
+
+    return {"people": people, "pets": pet_list, "dinner": dinner, "members": members}
+
+
+def save_household_people(people: list[dict]) -> None:
+    """Reconcile the household_member set: update existing, insert new, delete removed.
+
+    Each item: {contact_id?, name, role, birth_date?}. Items without a contact_id are
+    inserted; existing contact_ids not present in the payload are deleted (cascade
+    removes their household_details / caregiver hours; dinner/event refs go null).
+    """
+    sb = get_client()
+    uid = _user_id()
+
+    existing = {p["contact_id"] for p in fetch_household_editable()["people"]}
+    keep: set[str] = set()
+
+    for p in people:
+        name = (p.get("name") or "").strip()
+        role = p.get("role")
+        if not name:
+            raise ValueError("Every household member needs a name.")
+        if role not in _PEOPLE_ROLES:
+            raise ValueError(f"Invalid role {role!r}; must be one of {_PEOPLE_ROLES}.")
+        birth_date = (p.get("birth_date") or None)
+        cid = p.get("contact_id")
+
+        if cid:
+            keep.add(cid)
+            sb.table("contacts").update(
+                {"name": name, "birth_date": birth_date}
+            ).eq("id", cid).eq("user_id", uid).execute()
+            sb.table("household_details").upsert(
+                {"contact_id": cid, "user_id": uid, "role": role}, on_conflict="contact_id"
+            ).execute()
+        else:
+            ins = sb.table("contacts").insert(
+                {"user_id": uid, "name": name, "birth_date": birth_date, "tags": ["household_member"]}
+            ).execute()
+            new_id = ins.data[0]["id"]
+            sb.table("household_details").insert(
+                {"contact_id": new_id, "user_id": uid, "role": role}
+            ).execute()
+
+    for cid in existing - keep:
+        sb.table("contacts").delete().eq("id", cid).eq("user_id", uid).execute()
+
+
+def save_household_pets(pets: list[dict]) -> None:
+    """Reconcile pets: update existing, insert new, delete removed.
+
+    Each item: {id?, name, species?, breed?, walks_per_day?, notes?}.
+    """
+    sb = get_client()
+    uid = _user_id()
+
+    existing = {p["id"] for p in fetch_household_editable()["pets"]}
+    keep: set[str] = set()
+
+    for p in pets:
+        name = (p.get("name") or "").strip()
+        if not name:
+            raise ValueError("Every pet needs a name.")
+        fields = {
+            "name": name,
+            "species": (p.get("species") or None),
+            "breed": (p.get("breed") or None),
+            "walks_per_day": _clean_int(p.get("walks_per_day")),
+            "notes": (p.get("notes") or None),
+        }
+        pid = p.get("id")
+        if pid:
+            keep.add(pid)
+            sb.table("pets").update(fields).eq("id", pid).eq("user_id", uid).execute()
+        else:
+            sb.table("pets").insert({"user_id": uid, **fields}).execute()
+
+    for pid in existing - keep:
+        sb.table("pets").delete().eq("id", pid).eq("user_id", uid).execute()
+
+
+def save_dinner_defaults(items: list[dict]) -> None:
+    """Set each day's dinner default. Empty cook + empty notes clears that day."""
+    sb = get_client()
+    uid = _user_id()
+
+    for it in items:
+        day = it.get("day")
+        if day not in _DOW_ORDER:
+            raise ValueError(f"Invalid dinner day: {day!r}")
+        cook_id = it.get("cook_id") or None
+        notes = (it.get("dish_notes") or "").strip() or None
+        if not cook_id and not notes:
+            sb.table("dinner_defaults").delete().eq("user_id", uid).eq("day_of_week", day).execute()
+        else:
+            sb.table("dinner_defaults").upsert(
+                {"user_id": uid, "day_of_week": day, "cook_id": cook_id, "dish_notes": notes},
+                on_conflict="user_id,day_of_week",
+            ).execute()
+
+
 def load_household_from_db() -> dict[str, Any]:
     """Fetch household + recurring + dinner sections from Supabase.
 
