@@ -208,13 +208,25 @@ def compute_week_context(config: dict, week_monday: datetime.date) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def pull_gcal_events(week_monday: datetime.date, config: dict | None = None) -> dict[str, list[dict]] | None:
-    """Attempt to fetch GCal events. Returns None if not configured."""
-    cal_ids = {
+def _resolve_cal_ids(config: dict | None) -> dict[str, str | None]:
+    """Resolve the personal/family/work calendar IDs.
+
+    The work calendar is editable in config.yaml (``calendars.work``); it falls back
+    to the ``GCAL_WORK_ID`` env var only when config doesn't define the key at all.
+    An explicit blank in config means "no work calendar" and overrides the env var.
+    """
+    cfg_cals = (config or {}).get("calendars") or {}
+    work_id = cfg_cals["work"] if "work" in cfg_cals else os.getenv("GCAL_WORK_ID")
+    return {
         "personal": os.getenv("GCAL_PERSONAL_ID"),
         "family": os.getenv("GCAL_FAMILY_ID"),
-        "work": os.getenv("GCAL_WORK_ID"),
+        "work": work_id or None,
     }
+
+
+def pull_gcal_events(week_monday: datetime.date, config: dict | None = None) -> dict[str, list[dict]] | None:
+    """Attempt to fetch GCal events. Returns None if not configured."""
+    cal_ids = _resolve_cal_ids(config)
     if not any(cal_ids.values()):
         return None
 
@@ -490,6 +502,20 @@ DO NOT include status the schedule below already shows: "R caught up on coop shi
 "Chicken moved to Sun this week" (when Sun shows chicken anyway), "Cleaner coming Wed"
 (when Wed shows it). 2–4 bullets, max.
 
+FLAGS & ASKS — ONE LINE EACH:
+The "‼️ Flags & asks" section follows the same discipline as quick notes: only things
+needing action, never deliberation.
+- Each flag is ONE line: a directed ask ("@{partner}: ...") or a single decision/fact.
+  Max ~15 words. No sub-bullets, no second sentence explaining it.
+- NEVER show your reasoning, weigh options ("gym before work is fine, but...", "if H
+  prefers... either way..."), narrate hour-math ("M ends 5pm, H home ~6:15pm, so..."),
+  or present alternatives. Decide internally; state only the outcome.
+- BAD: "Tue coverage: M ends 5pm, H home ~6:15pm. R cannot leave until H is home — confirm
+  the pool team knows the late start."
+  GOOD: "@{partner}: pool ~6:15 Tue after {pa} home — tell your team."
+- Max 3 flags. If nothing needs action, omit the section entirely. Do not invent flags to
+  fill it.
+
 SENSITIVE LIFE EVENTS — TONE:
 For job loss, illness, grief, breakups, family conflict, etc., DO NOT use celebratory
 framing, 🎉 emoji, or upbeat editorializing — even if the side effect is logistically
@@ -591,8 +617,9 @@ OUTPUT FORMAT — BULLETS:
 - Then key events, dinner, gym, flags — one fact per bullet.
 - Use "•" for bullets.
 - Blank line between days for readability.
-- End with a "‼️ Flags & asks:" section (bullets) ONLY if there are open questions or babysitting needs.
-- Keep each day to 3-5 bullets max. Be concise — one fact per bullet.
+- End with a "‼️ Flags & asks:" section ONLY if there are open questions or babysitting needs — one line each, max 3, directed asks only (see FLAGS & ASKS rule). No reasoning.
+- Keep each day to 2-4 bullets max. Be concise — one fact per bullet. Omit anything routine.
+- Use the emojis from the TONE list above wherever they apply (swim 🏊, pool 🎱, gym 🏋️, chicken 🐔, etc.) — they are not optional decoration, they make the schedule skimmable.
 
 Example:
 📆 Weekly schedule 📆
@@ -946,11 +973,7 @@ def main():
 
     # Authenticate GCal upfront (gate before asking for notes)
     print("\nConnecting to Google Calendar...")
-    cal_ids = {
-        "personal": os.getenv("GCAL_PERSONAL_ID"),
-        "family": os.getenv("GCAL_FAMILY_ID"),
-        "work": os.getenv("GCAL_WORK_ID"),
-    }
+    cal_ids = _resolve_cal_ids(config)
     gcal_events = None
     if any(cal_ids.values()):
         try:

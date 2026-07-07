@@ -1,0 +1,4 @@
+# Supabase project config. Links this directory to the remote project so
+# `supabase db push` knows where to apply migrations from supabase/migrations/.
+# project_id is the project ref (matches SUPABASE_URL: https://<ref>.supabase.co).
+project_id = "deqemblldnslikaybbcv"

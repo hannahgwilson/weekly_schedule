@@ -2,194 +2,851 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Weekly schedule</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weekly Schedule</title>
   <style>
     :root {
-      --bg: #faf9f5;
-      --panel: #fff;
-      --border: #e5e1d6;
-      --text: #2b2b2b;
-      --muted: #6b6b6b;
-      --accent: #6b5b3d;
-      --accent-hover: #5a4d33;
-      --ok: #2f7d3e;
-      --err: #b3261e;
+      --bg: #f6f4ee;
+      --surface: #ffffff;
+      --surface-2: #fbfaf6;
+      --border: #e7e3d8;
+      --border-strong: #d8d2c4;
+      --ink: #2c2a26;
+      --muted: #6f6a60;
+      --sage: #5b6e57;
+      --sage-deep: #475440;
+      --sage-soft: #eef1ea;
+      --clay: #bb6a4b;
+      --clay-hover: #a45a3e;
+      --gold: #c79a3a;
+      --ok: #3f7d4f;
+      --ok-soft: #e9f1ea;
+      --warn: #c9772a;
+      --warn-soft: #fbefe0;
+      --err: #b3463b;
+      --err-soft: #fbe9e6;
+      --shadow: 0 1px 2px rgba(44,42,38,.04), 0 4px 14px rgba(44,42,38,.06);
+      --radius: 12px;
     }
     * { box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       background: var(--bg);
-      color: var(--text);
+      color: var(--ink);
       margin: 0;
-      padding: 2rem 1rem;
-      line-height: 1.45;
-    }
-    main { max-width: 720px; margin: 0 auto; }
-    h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
-    .sub { color: var(--muted); margin: 0 0 1.5rem; }
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.25rem 1.25rem 1rem;
-      margin-bottom: 1.25rem;
-    }
-    .panel h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
-    textarea {
-      width: 100%;
-      min-height: 180px;
-      padding: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: 0.95rem;
-      resize: vertical;
-      background: #fdfcf7;
-    }
-    textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-    .hint { color: var(--muted); font-size: 0.85rem; margin: 0.5rem 0 0.75rem; }
-    .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-    button {
-      background: var(--accent);
-      color: #fff;
-      border: 0;
-      padding: 0.6rem 1.1rem;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      cursor: pointer;
-      font-weight: 500;
-    }
-    button:hover { background: var(--accent-hover); }
-    button[disabled] { background: #b8ad94; cursor: progress; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner {
-      display: inline-block;
-      width: 0.85em;
-      height: 0.85em;
-      border: 2px solid #fff;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin-right: 0.4em;
-      vertical-align: -2px;
-    }
-    button.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
-    button.secondary:hover { background: #f3eee2; }
-    input[type="date"] {
-      padding: 0.45rem 0.5rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: 0.95rem;
-      background: #fdfcf7;
-    }
-    .flash {
-      padding: 0.75rem 1rem;
-      border-radius: 6px;
-      margin-bottom: 1rem;
-      font-size: 0.95rem;
-    }
-    .flash.ok { background: #e8f3ea; border: 1px solid #b9d9bf; color: var(--ok); }
-    .flash.err { background: #fbe9e7; border: 1px solid #f0c4be; color: var(--err); }
-    .captures { margin: 0.5rem 0 0; padding-left: 1.25rem; }
-    .captures li { margin: 0.15rem 0; font-size: 0.9rem; color: var(--muted); }
-    pre.schedule {
-      background: #fdfcf7;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 1rem;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.88rem;
       line-height: 1.5;
-      max-height: 70vh;
-      overflow: auto;
+      -webkit-font-smoothing: antialiased;
     }
-    .gen-row { justify-content: space-between; }
+    a { color: var(--clay); }
+
+    /* ---- App shell ---- */
+    .app { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; }
+    .sidebar {
+      background: var(--sage-soft);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      display: flex; flex-direction: column; gap: 1.5rem;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: .6rem; padding: 0 .4rem; }
+    .brand .logo {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: var(--sage); color: #fff; display: grid; place-items: center;
+      font-size: 1.1rem; font-weight: 700;
+    }
+    .brand h1 { font-size: 1.05rem; margin: 0; letter-spacing: -.01em; }
+    .brand .tag { font-size: .72rem; color: var(--muted); margin: 0; }
+    nav { display: flex; flex-direction: column; gap: .15rem; }
+    .nav-btn {
+      display: flex; align-items: center; gap: .65rem;
+      padding: .6rem .7rem; border-radius: 9px; border: 0; background: transparent;
+      color: var(--sage-deep); font-size: .92rem; font-weight: 500; cursor: pointer;
+      text-align: left; width: 100%; font-family: inherit;
+    }
+    .nav-btn .ico { font-size: 1.05rem; width: 1.3rem; text-align: center; }
+    .nav-btn:hover { background: #e4e8dd; }
+    .nav-btn.active { background: var(--sage); color: #fff; box-shadow: var(--shadow); }
+    .sidebar .foot { margin-top: auto; font-size: .72rem; color: var(--muted); padding: 0 .4rem; }
+
+    /* ---- Main ---- */
+    main { min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding: 1rem 1.75rem; border-bottom: 1px solid var(--border);
+      background: rgba(246,244,238,.85); backdrop-filter: blur(6px);
+      position: sticky; top: 0; z-index: 5; flex-wrap: wrap;
+    }
+    .topbar .view-title { font-size: 1.15rem; font-weight: 600; margin: 0; }
+    .week-pick { display: flex; align-items: center; gap: .5rem; font-size: .85rem; color: var(--muted); }
+    .content { padding: 1.75rem; max-width: 1080px; width: 100%; }
+    .view { display: none; }
+    .view.active { display: block; animation: fade .18s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem 1.35rem; margin-bottom: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .panel h2 { margin: 0 0 .25rem; font-size: 1rem; }
+    .panel .desc { margin: 0 0 1rem; color: var(--muted); font-size: .85rem; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+    /* ---- Controls ---- */
+    label.field { display: block; font-size: .82rem; color: var(--muted); margin-bottom: .35rem; font-weight: 500; }
+    textarea, input[type="text"], input[type="date"], select {
+      width: 100%; padding: .6rem .7rem; border: 1px solid var(--border-strong);
+      border-radius: 8px; font-family: inherit; font-size: .92rem; background: var(--surface-2); color: var(--ink);
+    }
+    textarea { min-height: 150px; resize: vertical; }
+    input:focus, textarea:focus, select:focus { outline: 2px solid var(--sage); outline-offset: -1px; }
+    .hint { color: var(--muted); font-size: .8rem; margin: .45rem 0 0; }
+    .row { display: flex; gap: .65rem; align-items: center; flex-wrap: wrap; }
+    .spacer { flex: 1; }
+
+    button.btn {
+      background: var(--clay); color: #fff; border: 0; padding: .62rem 1.15rem;
+      border-radius: 8px; font-size: .92rem; cursor: pointer; font-weight: 600; font-family: inherit;
+      display: inline-flex; align-items: center; gap: .45rem;
+    }
+    button.btn:hover { background: var(--clay-hover); }
+    button.btn:disabled { opacity: .65; cursor: progress; }
+    button.btn.ghost { background: transparent; color: var(--sage-deep); border: 1px solid var(--border-strong); }
+    button.btn.ghost:hover { background: var(--sage-soft); }
+    button.btn.sage { background: var(--sage); } button.btn.sage:hover { background: var(--sage-deep); }
+    button.linklike { background: none; border: 0; color: var(--clay); cursor: pointer; font: inherit; padding: 0; }
+
+    /* segmented */
+    .segmented { display: inline-flex; background: var(--sage-soft); border-radius: 9px; padding: 3px; gap: 3px; }
+    .segmented button {
+      border: 0; background: transparent; padding: .4rem .85rem; border-radius: 7px;
+      font-size: .85rem; cursor: pointer; color: var(--sage-deep); font-family: inherit; font-weight: 500;
+    }
+    .segmented button.on { background: var(--surface); box-shadow: var(--shadow); color: var(--ink); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: .85em; height: .85em; border: 2px solid #fff; border-top-color: transparent;
+      border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
+
+    /* ---- Flags ---- */
+    .flags { margin-bottom: 1rem; }
+    .flags:empty { display: none; }
+    .flag-head { font-size: .82rem; font-weight: 600; color: #8a4d18; margin-bottom: .4rem; }
+    .flag-list {
+      margin: 0; padding: .6rem .85rem .6rem 1.9rem; list-style: disc;
+      background: var(--warn-soft); border: 1px solid #efd6b3; border-radius: 8px;
+    }
+    .flag-list li { font-size: .85rem; color: #6e3d12; margin: .2rem 0; line-height: 1.45; }
+    .chip {
+      display: inline-flex; align-items: center; gap: .4rem; padding: .2rem .55rem;
+      border-radius: 999px; font-size: .78rem; font-weight: 500;
+      background: var(--warn-soft); color: #8a4d18; border: 1px solid #efd6b3;
+    }
+
+    pre.schedule {
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1rem 1.1rem; white-space: pre-wrap; word-wrap: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86rem;
+      line-height: 1.55; max-height: 64vh; overflow: auto; margin: 0;
+    }
+    .empty { color: var(--muted); font-size: .9rem; text-align: center; padding: 2.5rem 1rem; }
+    .skeleton { height: 14px; border-radius: 6px; background: linear-gradient(90deg,#eee,#f6f5f0,#eee);
+      background-size: 200% 100%; animation: shimmer 1.2s infinite; margin: .55rem 0; }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ---- Calendar ---- */
+    .legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; font-size: .8rem; color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: .35rem; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .cal-personal { --c: #6c8ebf; } .cal-family { --c: #7aa874; } .cal-work { --c: #c08552; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: .6rem; }
+    .day {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: .6rem .55rem; min-height: 130px; box-shadow: var(--shadow);
+    }
+    .day.weekend { background: var(--surface-2); }
+    .day h3 { margin: 0 0 .1rem; font-size: .82rem; }
+    .day .date { color: var(--muted); font-size: .72rem; margin-bottom: .5rem; }
+    .ev {
+      display: block; border-left: 3px solid var(--c, var(--border-strong));
+      background: var(--surface-2); border-radius: 0 6px 6px 0; padding: .3rem .45rem;
+      margin-bottom: .35rem; font-size: .76rem; text-decoration: none; color: var(--ink);
+    }
+    a.ev:hover { background: var(--sage-soft); }
+    .ev .t { color: var(--muted); font-size: .68rem; display: block; }
+    .ev .ext { color: var(--clay); font-size: .66rem; }
+    .day .none { color: #b8b2a4; font-size: .72rem; font-style: italic; }
+
+    /* ---- Config ---- */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    .kv-row { display: grid; grid-template-columns: 1fr 70px 32px; gap: .5rem; margin-bottom: .5rem; align-items: center; }
+    .kv-row input[type="text"] { padding: .45rem .55rem; }
+    .summary-item { display: flex; justify-content: space-between; padding: .35rem 0; border-bottom: 1px dashed var(--border); font-size: .86rem; }
+    .summary-item:last-child { border-bottom: 0; }
+    .summary-item .k { color: var(--muted); }
+    .pill { font-size: .72rem; background: var(--sage-soft); color: var(--sage-deep); padding: .12rem .5rem; border-radius: 999px; }
+    .work-card { border: 1px solid var(--border); border-radius: 10px; padding: .9rem 1rem; margin-top: 1rem; background: var(--surface-2); }
+    .work-card .wc-head { display: flex; align-items: baseline; gap: .5rem; margin-bottom: .7rem; }
+    .work-card .wc-head strong { font-size: .95rem; }
+    .work-card .wc-head .role { font-size: .74rem; color: var(--muted); }
+    .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .7rem .9rem; }
+    .field-grid label.field { margin-bottom: .2rem; }
+    .field-grid input { padding: .45rem .55rem; }
+    .day-toggles { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .2rem; }
+    .day-toggles label {
+      display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; color: var(--ink);
+      background: var(--surface); border: 1px solid var(--border-strong); border-radius: 7px; padding: .25rem .5rem; cursor: pointer;
+    }
+    .day-toggles label:has(input:checked) { background: var(--sage-soft); border-color: var(--sage); color: var(--sage-deep); font-weight: 600; }
+    .cg-table { display: grid; grid-template-columns: 3.2rem 1fr 1fr auto; gap: .4rem .6rem; align-items: center; margin-top: .3rem; }
+    .cg-table .cg-day { font-size: .8rem; color: var(--muted); text-transform: capitalize; }
+    .cg-table input[type="time"] { padding: .35rem .45rem; }
+    .cg-table .bal { display: inline-flex; align-items: center; gap: .3rem; font-size: .76rem; color: var(--muted); }
+    .cg-table input:disabled { opacity: .4; }
+    .hh-row { display: grid; gap: .5rem; align-items: center; margin-bottom: .5rem; }
+    .hh-row input, .hh-row select { padding: .45rem .55rem; }
+    .hh-row .rm { padding: .3rem .55rem; }
+    .people-row { grid-template-columns: 1.4fr 1fr 150px 34px; }
+    .pet-row { grid-template-columns: 1.2fr 1fr 1fr 90px 1.4fr 34px; }
+    .dinner-row { grid-template-columns: 4.5rem 1.2fr 2fr; }
+    .dinner-row .d-day { font-size: .84rem; color: var(--muted); text-transform: capitalize; }
+    .hh-head { display: grid; gap: .5rem; font-size: .74rem; color: var(--muted); font-weight: 600; margin-bottom: .3rem; padding: 0 .1rem; }
+    @media (max-width: 720px) {
+      .people-row, .pet-row { grid-template-columns: 1fr 1fr; }
+      .hh-head { display: none; }
+    }
+
+    /* ---- History ---- */
+    .run { border: 1px solid var(--border); border-radius: 10px; margin-bottom: .7rem; background: var(--surface); box-shadow: var(--shadow); }
+    .run summary { cursor: pointer; padding: .8rem 1rem; display: flex; align-items: center; gap: .8rem; list-style: none; }
+    .run summary::-webkit-details-marker { display: none; }
+    .run .w { font-weight: 600; font-size: .92rem; }
+    .run .meta { color: var(--muted); font-size: .78rem; }
+    .run .body { padding: 0 1rem 1rem; }
+
+    /* ---- Toasts ---- */
+    #toasts { position: fixed; bottom: 1.25rem; right: 1.25rem; display: flex; flex-direction: column; gap: .5rem; z-index: 50; }
+    .toast {
+      padding: .7rem 1rem; border-radius: 9px; font-size: .85rem; color: #fff; box-shadow: var(--shadow);
+      animation: toastin .2s ease; max-width: 340px;
+    }
+    .toast.ok { background: var(--ok); } .toast.err { background: var(--err); } .toast.info { background: var(--sage-deep); }
+    @keyframes toastin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 880px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; flex-direction: row; align-items: center; gap: .75rem;
+        overflow-x: auto; padding: .75rem 1rem; }
+      .sidebar .foot, .brand .tag { display: none; }
+      nav { flex-direction: row; }
+      .nav-btn span.lbl { display: none; }
+      .nav-btn { padding: .55rem .65rem; }
+      .grid2 { grid-template-columns: 1fr; }
+      .cal-grid { grid-template-columns: 1fr 1fr; }
+      .content { padding: 1.1rem; }
+    }
+    @media (max-width: 520px) { .cal-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Weekly schedule</h1>
-    <p class="sub">Capture notes → Open Brain. Generate when ready.</p>
-
-    {% if error %}
-      <div class="flash err">{{ error }}</div>
-    {% endif %}
-
-    {% if captured %}
-      <div class="flash ok">
-        Captured {{ captured|length }} thought{{ "s" if captured|length != 1 else "" }} to Open Brain.
-        <ul class="captures">
-          {% for c in captured %}<li>{{ c }}</li>{% endfor %}
-        </ul>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">W</div>
+        <div>
+          <h1>Weekly</h1>
+          <p class="tag">Household schedule</p>
+        </div>
       </div>
-    {% endif %}
+      <nav>
+        <button class="nav-btn active" data-view="run"><span class="ico">▶</span><span class="lbl">Run</span></button>
+        <button class="nav-btn" data-view="calendar"><span class="ico">▦</span><span class="lbl">Calendar</span></button>
+        <button class="nav-btn" data-view="config"><span class="ico">⚙</span><span class="lbl">Configuration</span></button>
+        <button class="nav-btn" data-view="history"><span class="ico">🕘</span><span class="lbl">History</span></button>
+      </nav>
+      <div class="foot">Wilson Family Chat<br>Mon–Sun planning</div>
+    </aside>
 
-    {% if entity_result %}
-      <div class="flash ok">
-        Processed {{ entity_result.processed }} thought{{ "s" if entity_result.processed != 1 else "" }} →
-        {{ entity_result.entities_created }} entit{{ "ies" if entity_result.entities_created != 1 else "y" }},
-        {{ entity_result.edges_created }} edge{{ "s" if entity_result.edges_created != 1 else "" }}
-        ({{ entity_result.succeeded }} ok, {{ entity_result.failed }} failed,
-        {{ entity_result.iterations }} worker call{{ "s" if entity_result.iterations != 1 else "" }};
-        stopped: {{ entity_result.stopped_reason }}).
+    <main>
+      <div class="topbar">
+        <h2 class="view-title" id="viewTitle">Run</h2>
+        <div class="week-pick">
+          <label for="week">Week of (Mon)</label>
+          <input type="date" id="week" value="{{ week }}" style="width:auto">
+        </div>
       </div>
-    {% endif %}
 
-    <section class="panel">
-      <h2>1. Notes</h2>
-      <form method="post" action="/capture" data-busy="Capturing…">
-        <textarea name="notes" placeholder="Type notes here. Separate distinct thoughts with a blank line.&#10;&#10;e.g.&#10;Chicken moved to Sunday — Tuesday is leftovers&#10;&#10;Ryan caught up on coop shifts">{{ notes }}</textarea>
-        <p class="hint">Each blank-line-separated block becomes one thought.</p>
-        <div class="row">
-          <button type="submit">Capture to Open Brain</button>
-        </div>
-      </form>
-    </section>
+      <div class="content">
+        <!-- ============ RUN ============ -->
+        <section class="view active" id="view-run">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Generate the schedule</h2>
+                <p class="desc">Pulls Google Calendar + Open Brain notes, then asks Claude. ~30–60s.</p>
+              </div>
+            </div>
+            <label class="field">Summary format</label>
+            <div class="segmented" id="fmtToggle">
+              <button data-fmt="bullets" class="on">Bullets</button>
+              <button data-fmt="person">By person</button>
+              <button data-fmt="grid">Grid</button>
+            </div>
+            <div class="row" style="margin-top:1.1rem">
+              <button class="btn" id="runBtn">▶ Run schedule</button>
+              <span class="hint" id="runHint">Uses the week selected above.</span>
+            </div>
+          </div>
 
-    <section class="panel">
-      <h2>2. Process thoughts → entities</h2>
-      <form method="post" action="/process-entities" data-busy="Processing… (can take a few min)">
-        <p class="hint">Drains the entity-extraction queue: runs the worker repeatedly with limit=3 until empty (max 20 calls). Also runs nightly at midnight ET via pg_cron.</p>
-        <div class="row">
-          <button type="submit">Process queue now</button>
-        </div>
-      </form>
-    </section>
+          <div class="panel">
+            <h2>This week's notes</h2>
+            <p class="desc">Each blank-line-separated block becomes one thought in Open Brain. These feed the next run.</p>
+            <textarea id="notes" placeholder="e.g.&#10;Chicken moved to Sunday — Tuesday is leftovers&#10;&#10;Ryan caught up on coop shifts"></textarea>
+            <div class="row" style="margin-top:.75rem">
+              <button class="btn sage" id="captureBtn">Capture to Open Brain</button>
+              <button class="btn ghost" id="processBtn">Process queue → entities</button>
+            </div>
+          </div>
 
-    <section class="panel">
-      <h2>3. Generate schedule</h2>
-      <form method="post" action="/generate" data-busy="Generating… (30–60s)">
-        <div class="row gen-row">
-          <label>Week starting (Monday):
-            <input type="date" name="week" value="{{ week }}">
-          </label>
-          <button type="submit">Generate</button>
-        </div>
-        <p class="hint">Pulls GCal + Open Brain notes, then asks Claude. Usually 30–60 seconds.</p>
-      </form>
-    </section>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Schedule</h2>
+              <button class="btn ghost" id="copyBtn" style="display:none">⧉ Copy</button>
+            </div>
+            <div class="flags" id="flags"></div>
+            <div id="output"><div class="empty">No schedule yet — hit <strong>Run schedule</strong> to generate one.</div></div>
+          </div>
+        </section>
 
-    {% if schedule %}
-      <section class="panel">
-        <h2>Schedule</h2>
-        <pre class="schedule">{{ schedule }}</pre>
-      </section>
-    {% endif %}
-  </main>
+        <!-- ============ CALENDAR ============ -->
+        <section class="view" id="view-calendar">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h2 id="calRange">This week</h2><p class="desc">Events from your linked calendars. Click any event to open it in Google Calendar.</p></div>
+              <button class="btn ghost" id="calRefresh">↻ Refresh</button>
+            </div>
+            <div class="legend">
+              <span><i class="dot" style="background:#6c8ebf"></i> Personal</span>
+              <span><i class="dot" style="background:#7aa874"></i> Family</span>
+              <span><i class="dot" style="background:#c08552"></i> Work</span>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+        </section>
+
+        <!-- ============ CONFIG ============ -->
+        <section class="view" id="view-config">
+          <div class="grid2">
+            <div class="panel">
+              <h2>Output settings</h2>
+              <p class="desc">Saved to config.yaml. Edits persist across runs.</p>
+              <label class="field" for="cfgFormat">Default format</label>
+              <select id="cfgFormat">
+                {% for f in formats %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+              </select>
+              <label class="field" for="cfgGroup" style="margin-top:.9rem">WhatsApp group name</label>
+              <input type="text" id="cfgGroup">
+              <label class="field" for="cfgExcluded" style="margin-top:.9rem">Excluded event patterns (one regex per line)</label>
+              <textarea id="cfgExcluded" style="min-height:90px"></textarea>
+              <div class="row" style="margin-top:1rem">
+                <button class="btn" id="saveCfgBtn">Save settings</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h2>Emoji map</h2>
+              <p class="desc">Keyword → emoji used when formatting the schedule.</p>
+              <div id="emojiRows"></div>
+              <button class="btn ghost" id="addEmoji" style="margin-top:.4rem">+ Add</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Work schedules <span class="pill">saved to Supabase</span></h2>
+              <button class="btn" id="saveWorkBtn">Save work schedules</button>
+            </div>
+            <p class="desc">The adults' weekly work hours, plus the work calendar feeding the meeting/ETA &amp; gym-timing analysis.</p>
+            <label class="field" for="cfgWorkCal">Work calendar (Google Calendar ID) — blank = no work calendar pulled</label>
+            <input type="text" id="cfgWorkCal" placeholder="e.g. name@company.com">
+            <p class="hint">This is the calendar whose meetings drive the primary scheduler's ETA-home and gym windows. Clear it (or point it at a new one) when jobs change.</p>
+            <div id="workForms"><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:65%"></div></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>People <span class="pill">saved to Supabase</span></h2>
+              <button class="btn" id="savePeopleBtn">Save people</button>
+            </div>
+            <p class="desc">Household members. Changing a role here reclassifies them; adults also get a card in Work schedules above.</p>
+            <div id="peopleRows"></div>
+            <button class="btn ghost" id="addPersonBtn" style="margin-top:.5rem">+ Add person</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Pets <span class="pill">saved to Supabase</span></h2>
+              <button class="btn" id="savePetsBtn">Save pets</button>
+            </div>
+            <p class="desc">Walk schedules &amp; dog-walker assignments are managed separately.</p>
+            <div id="petRows"></div>
+            <button class="btn ghost" id="addPetBtn" style="margin-top:.5rem">+ Add pet</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Dinner defaults <span class="pill">saved to Supabase</span></h2>
+              <button class="btn" id="saveDinnerBtn">Save dinner</button>
+            </div>
+            <p class="desc">Who cooks each night by default, plus an optional dish note. Leave the cook blank to clear a day.</p>
+            <div id="dinnerRows"></div>
+          </div>
+        </section>
+
+        <!-- ============ HISTORY ============ -->
+        <section class="view" id="view-history">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h2>Recent runs</h2><p class="desc">Re-open a previously generated schedule without regenerating.</p></div>
+              <button class="btn ghost" id="histRefresh">↻ Refresh</button>
+            </div>
+            <div id="histList"><div class="empty">Loading…</div></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div id="toasts"></div>
+
   <script>
-    // Disable submit + show spinner so the user knows it's working.
-    document.querySelectorAll('form[data-busy]').forEach(form => {
-      form.addEventListener('submit', () => {
-        const busy = form.dataset.busy || 'Working…';
-        form.querySelectorAll('button[type="submit"]').forEach(btn => {
-          btn.disabled = true;
-          btn.innerHTML = '<span class="spinner"></span>' + busy;
-        });
-      });
+    const $ = (s, r=document) => r.querySelector(s);
+    const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+    const HISTORY_ON = {{ 'true' if history_enabled else 'false' }};
+
+    function toast(msg, kind='info') {
+      const t = document.createElement('div');
+      t.className = 'toast ' + kind; t.textContent = msg;
+      $('#toasts').appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 250); }, 3800);
+    }
+    function busy(btn, on, label) {
+      if (on) { btn.dataset.label = btn.innerHTML; btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> ' + (label || 'Working…'); }
+      else { btn.disabled = false; btn.innerHTML = btn.dataset.label; }
+    }
+    async function api(url, opts) {
+      const res = await fetch(url, opts);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+      return data;
+    }
+    const esc = s => (s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+    /* ---- Nav ---- */
+    const titles = { run:'Run', calendar:'Calendar', config:'Configuration', history:'History' };
+    let calLoaded = false;
+    $$('.nav-btn').forEach(b => b.addEventListener('click', () => {
+      $$('.nav-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      const v = b.dataset.view;
+      $$('.view').forEach(x => x.classList.remove('active'));
+      $('#view-' + v).classList.add('active');
+      $('#viewTitle').textContent = titles[v];
+      if (v === 'calendar') loadCalendar();
+      if (v === 'history') loadHistory();
+    }));
+
+    /* ---- Format toggle ---- */
+    let fmt = 'bullets';
+    $$('#fmtToggle button').forEach(b => b.addEventListener('click', () => {
+      $$('#fmtToggle button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on'); fmt = b.dataset.fmt;
+    }));
+    function setFmt(f) {
+      fmt = f;
+      $$('#fmtToggle button').forEach(x => x.classList.toggle('on', x.dataset.fmt === f));
+    }
+
+    /* ---- Run ---- */
+    function renderSchedule(data) {
+      const out = $('#output');
+      out.innerHTML = '<pre class="schedule">' + esc(data.schedule) + '</pre>';
+      const flags = $('#flags');
+      flags.innerHTML = '';
+      if (data.flags && data.flags.length) {
+        flags.innerHTML =
+          `<div class="flag-head">⚑ ${data.flags.length} flag${data.flags.length>1?'s':''} &amp; asks</div>`
+          + '<ul class="flag-list">' + data.flags.map(f => `<li>${esc(f)}</li>`).join('') + '</ul>';
+      }
+      $('#copyBtn').style.display = '';
+      $('#copyBtn').dataset.text = data.schedule;
+    }
+    $('#runBtn').addEventListener('click', async () => {
+      const btn = $('#runBtn');
+      $('#output').innerHTML = '<div class="skeleton" style="width:90%"></div><div class="skeleton" style="width:75%"></div><div class="skeleton" style="width:82%"></div><div class="skeleton" style="width:60%"></div>';
+      $('#flags').innerHTML = '';
+      busy(btn, true, 'Generating… (30–60s)');
+      try {
+        const data = await api('/api/generate', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ week: $('#week').value, format: fmt, notes: '' }) });
+        renderSchedule(data);
+        toast('Schedule generated', 'ok');
+        if (HISTORY_ON) calLoaded && loadHistory();
+      } catch (e) {
+        $('#output').innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
+        toast(e.message, 'err');
+      } finally { busy(btn, false); }
     });
+    $('#copyBtn').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText($('#copyBtn').dataset.text || ''); toast('Copied to clipboard', 'ok'); }
+      catch { toast('Copy failed', 'err'); }
+    });
+    $('#captureBtn').addEventListener('click', async () => {
+      const btn = $('#captureBtn'); const notes = $('#notes').value;
+      if (!notes.trim()) { toast('Type some notes first', 'err'); return; }
+      busy(btn, true, 'Capturing…');
+      try {
+        const d = await api('/api/capture', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ notes }) });
+        toast(`Captured ${d.captured.length} thought${d.captured.length!==1?'s':''} to Open Brain`, 'ok');
+        $('#notes').value = '';
+      } catch (e) { toast(e.message, 'err'); } finally { busy(btn, false); }
+    });
+    $('#processBtn').addEventListener('click', async () => {
+      const btn = $('#processBtn'); busy(btn, true, 'Processing…');
+      try {
+        const d = await api('/api/process-entities', { method:'POST' });
+        const r = d.result || {};
+        toast(`Processed ${r.processed??0} → ${r.entities_created??0} entities, ${r.edges_created??0} edges`, 'ok');
+      } catch (e) { toast(e.message, 'err'); } finally { busy(btn, false); }
+    });
+
+    /* ---- Calendar ---- */
+    async function loadCalendar() {
+      const grid = $('#calGrid');
+      grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Loading calendar…</div>';
+      try {
+        const d = await api('/api/events?week=' + encodeURIComponent($('#week').value));
+        calLoaded = true;
+        $('#calRange').textContent = `${d.week} → ${d.week_end}`;
+        if (!d.configured) {
+          grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No calendars configured (set GCAL_*_ID in .env).</div>';
+          return;
+        }
+        grid.innerHTML = d.days.map(day => {
+          const weekend = (day.name === 'saturday' || day.name === 'sunday') ? ' weekend' : '';
+          const evs = day.events.length ? day.events.map(e => {
+            const cls = 'cal-' + (e.calendar || '');
+            const time = e.all_day ? 'All day' : [e.start, e.end].filter(Boolean).join('–');
+            const inner = `<span class="t">${esc(time)}</span>${esc(e.summary)}${e.link ? ' <span class="ext">↗</span>' : ''}`;
+            return e.link
+              ? `<a class="ev ${cls}" href="${esc(e.link)}" target="_blank" rel="noopener">${inner}</a>`
+              : `<span class="ev ${cls}">${inner}</span>`;
+          }).join('') : '<div class="none">—</div>';
+          return `<div class="day${weekend}"><h3>${day.label}</h3><div class="date">${day.display}</div>${evs}</div>`;
+        }).join('');
+      } catch (e) {
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1">⚠️ ${esc(e.message)}</div>`;
+      }
+    }
+    $('#calRefresh').addEventListener('click', loadCalendar);
+    $('#week').addEventListener('change', () => { if ($('#view-calendar').classList.contains('active')) loadCalendar(); });
+
+    /* ---- Config ---- */
+    function emojiRow(k='', v='') {
+      const div = document.createElement('div'); div.className = 'kv-row';
+      div.innerHTML = `<input type="text" class="ek" placeholder="keyword" value="${esc(k)}">
+        <input type="text" class="ev2" placeholder="🙂" value="${esc(v)}">
+        <button class="btn ghost rm" style="padding:.3rem .5rem">✕</button>`;
+      div.querySelector('.rm').addEventListener('click', () => div.remove());
+      return div;
+    }
+    async function loadConfig() {
+      try {
+        const d = await api('/api/config');
+        const s = d.settings;
+        $('#cfgFormat').value = s.format; setFmt(s.format);
+        $('#cfgGroup').value = s.group_name || '';
+        $('#cfgExcluded').value = (s.excluded_events || []).join('\n');
+        $('#cfgWorkCal').value = (d.calendars && d.calendars.work) || '';
+        const rows = $('#emojiRows'); rows.innerHTML = '';
+        Object.entries(s.emoji_map || {}).forEach(([k, v]) => rows.appendChild(emojiRow(k, v)));
+      } catch (e) { toast(e.message, 'err'); }
+    }
+    $('#addEmoji').addEventListener('click', () => $('#emojiRows').appendChild(emojiRow()));
+    $('#saveCfgBtn').addEventListener('click', async () => {
+      const btn = $('#saveCfgBtn');
+      const emoji = {};
+      $$('#emojiRows .kv-row').forEach(r => {
+        const k = r.querySelector('.ek').value.trim(), v = r.querySelector('.ev2').value.trim();
+        if (k && v) emoji[k] = v;
+      });
+      busy(btn, true, 'Saving…');
+      try {
+        const d = await api('/api/config', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ format: $('#cfgFormat').value, group_name: $('#cfgGroup').value,
+            excluded_events: $('#cfgExcluded').value, emoji_map: emoji }) });
+        setFmt(d.settings.format);
+        toast('Settings saved', 'ok');
+      } catch (e) { toast(e.message, 'err'); } finally { busy(btn, false); }
+    });
+
+    /* ---- Work schedules ---- */
+    const WDAYS = [['monday','Mon'],['tuesday','Tue'],['wednesday','Wed'],['thursday','Thu'],['friday','Fri'],['saturday','Sat'],['sunday','Sun']];
+    const ROLE_LABEL = { primary_scheduler:'primary scheduler', partner:'partner', au_pair:'au pair' };
+
+    function workCard(a) {
+      const card = document.createElement('div');
+      card.className = 'work-card';
+      card.dataset.cid = a.contact_id;
+      card.dataset.role = a.role;
+      const tv = v => v || '';  // time value
+
+      let inner = `<div class="wc-head"><strong>${esc(a.name)}</strong><span class="role">${esc(ROLE_LABEL[a.role] || a.role)}</span></div>`;
+
+      if (a.role === 'au_pair') {
+        const rows = WDAYS.map(([d, lbl]) => {
+          const h = (a.caregiver_hours || {})[d] || {};
+          const bal = h.is_balance ? 'checked' : '';
+          const dis = h.is_balance ? 'disabled' : '';
+          return `<span class="cg-day">${lbl}</span>
+            <input type="time" class="cg-start" data-day="${d}" value="${tv(h.start_time)}" ${dis}>
+            <input type="time" class="cg-end" data-day="${d}" value="${tv(h.end_time)}" ${dis}>
+            <label class="bal"><input type="checkbox" class="cg-bal" data-day="${d}" ${bal}> balance</label>`;
+        }).join('');
+        inner += `
+          <div class="field-grid" style="grid-template-columns:minmax(130px,220px)">
+            <div><label class="field">Weekly hours target</label>
+              <input type="number" class="w-weekly" step="0.5" min="0" value="${a.weekly_hours_target ?? ''}"></div>
+          </div>
+          <label class="field" style="margin-top:.8rem">Daily hours (check <em>balance</em> for the flex/remainder day)</label>
+          <div class="cg-table">${rows}</div>`;
+      } else {
+        const days = WDAYS.map(([d, lbl]) => {
+          const on = (a.work_days || []).includes(d) ? 'checked' : '';
+          return `<label><input type="checkbox" class="wd" value="${d}" ${on}>${lbl}</label>`;
+        }).join('');
+        inner += `
+          <label class="field">Work days</label>
+          <div class="day-toggles">${days}</div>
+          <div class="field-grid" style="margin-top:.8rem">
+            <div><label class="field">Work start</label><input type="time" class="w-start" value="${tv(a.work_start)}"></div>
+            <div><label class="field">Work end</label><input type="time" class="w-end" value="${tv(a.work_end)}"></div>
+            <div><label class="field">Commute (min)</label><input type="number" class="w-commute" min="0" value="${a.commute_minutes ?? ''}"></div>
+            <div><label class="field">Leaves home</label><input type="time" class="w-leaves" value="${tv(a.leaves_home)}"></div>
+            <div><label class="field">Returns home</label><input type="time" class="w-returns" value="${tv(a.returns_home)}"></div>
+          </div>`;
+      }
+      inner += `<label class="field" style="margin-top:.8rem">Notes</label>
+        <input type="text" class="w-notes" value="${esc(a.schedule_stability_notes)}" placeholder="e.g. schedule is stable week-to-week">`;
+      card.innerHTML = inner;
+
+      // balance toggles disable that day's time inputs
+      $$('.cg-bal', card).forEach(cb => cb.addEventListener('change', () => {
+        const d = cb.dataset.day;
+        $$(`.cg-start[data-day="${d}"], .cg-end[data-day="${d}"]`, card).forEach(i => {
+          i.disabled = cb.checked; if (cb.checked) i.value = '';
+        });
+      }));
+      return card;
+    }
+
+    async function loadWork() {
+      const host = $('#workForms');
+      try {
+        const d = await api('/api/work-schedules');
+        host.innerHTML = '';
+        d.adults.forEach(a => host.appendChild(workCard(a)));
+        if (!d.adults.length) host.innerHTML = '<div class="empty">No adults found in the household database.</div>';
+      } catch (e) { host.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`; }
+    }
+
+    $('#saveWorkBtn').addEventListener('click', async () => {
+      const btn = $('#saveWorkBtn');
+      const adults = $$('#workForms .work-card').map(card => {
+        const role = card.dataset.role;
+        const entry = {
+          contact_id: card.dataset.cid,
+          role,
+          schedule_stability_notes: $('.w-notes', card).value.trim(),
+        };
+        if (role === 'au_pair') {
+          entry.weekly_hours_target = $('.w-weekly', card).value.trim();
+          const hours = {};
+          WDAYS.forEach(([d]) => {
+            const bal = $(`.cg-bal[data-day="${d}"]`, card).checked;
+            hours[d] = {
+              is_balance: bal,
+              start_time: bal ? '' : $(`.cg-start[data-day="${d}"]`, card).value,
+              end_time: bal ? '' : $(`.cg-end[data-day="${d}"]`, card).value,
+            };
+          });
+          entry.caregiver_hours = hours;
+        } else {
+          entry.work_days = $$('.wd', card).filter(c => c.checked).map(c => c.value);
+          entry.work_start = $('.w-start', card).value;
+          entry.work_end = $('.w-end', card).value;
+          entry.commute_minutes = $('.w-commute', card).value.trim();
+          entry.leaves_home = $('.w-leaves', card).value;
+          entry.returns_home = $('.w-returns', card).value;
+        }
+        return entry;
+      });
+      busy(btn, true, 'Saving…');
+      try {
+        // Work calendar lives in config.yaml; schedules live in Supabase — save both.
+        await api('/api/config', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ work_calendar: $('#cfgWorkCal').value.trim() }) });
+        const d = await api('/api/work-schedules', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ adults }) });
+        $('#workForms').innerHTML = '';
+        d.adults.forEach(a => $('#workForms').appendChild(workCard(a)));
+        toast('Work schedules saved', 'ok');
+      } catch (e) { toast(e.message, 'err'); } finally { busy(btn, false); }
+    });
+
+    /* ---- Household (people / pets / dinner) ---- */
+    const HH_ROLES = [['primary_scheduler','Primary scheduler'],['partner','Partner'],['au_pair','Au pair'],['child','Child']];
+    let hhMembers = [];  // [{contact_id, name}] for dinner cook dropdowns
+
+    function personRow(p = {}) {
+      const div = document.createElement('div');
+      div.className = 'hh-row people-row';
+      if (p.contact_id) div.dataset.cid = p.contact_id;
+      const roleOpts = HH_ROLES.map(([v, l]) =>
+        `<option value="${v}"${p.role === v ? ' selected' : ''}>${l}</option>`).join('');
+      div.innerHTML = `
+        <input type="text" class="p-name" placeholder="Name" value="${esc(p.name)}">
+        <select class="p-role">${roleOpts}</select>
+        <input type="date" class="p-bd" value="${esc(p.birth_date)}" title="Birth date (for age)">
+        <button class="btn ghost rm" title="Remove">✕</button>`;
+      div.querySelector('.rm').addEventListener('click', () => div.remove());
+      return div;
+    }
+
+    function petRow(p = {}) {
+      const div = document.createElement('div');
+      div.className = 'hh-row pet-row';
+      if (p.id) div.dataset.pid = p.id;
+      div.innerHTML = `
+        <input type="text" class="pt-name" placeholder="Name" value="${esc(p.name)}">
+        <input type="text" class="pt-species" placeholder="Species" value="${esc(p.species)}">
+        <input type="text" class="pt-breed" placeholder="Breed" value="${esc(p.breed)}">
+        <input type="number" class="pt-walks" placeholder="Walks/day" min="0" value="${p.walks_per_day ?? ''}">
+        <input type="text" class="pt-notes" placeholder="Notes" value="${esc(p.notes)}">
+        <button class="btn ghost rm" title="Remove">✕</button>`;
+      div.querySelector('.rm').addEventListener('click', () => div.remove());
+      return div;
+    }
+
+    function dinnerRow(day, entry) {
+      const div = document.createElement('div');
+      div.className = 'hh-row dinner-row';
+      div.dataset.day = day;
+      const opts = ['<option value="">— none —</option>']
+        .concat(hhMembers.map(m => `<option value="${m.contact_id}"${entry.cook_id === m.contact_id ? ' selected' : ''}>${esc(m.name)}</option>`))
+        .join('');
+      div.innerHTML = `
+        <span class="d-day">${day.slice(0,3)}</span>
+        <select class="d-cook">${opts}</select>
+        <input type="text" class="d-notes" placeholder="Dish note (e.g. chicken)" value="${esc(entry.dish_notes)}">`;
+      return div;
+    }
+
+    function renderHousehold(d) {
+      hhMembers = d.members || [];
+      const pr = $('#peopleRows'); pr.innerHTML =
+        '<div class="hh-head people-row"><span>Name</span><span>Role</span><span>Birth date</span><span></span></div>';
+      (d.people || []).forEach(p => pr.appendChild(personRow(p)));
+
+      const petr = $('#petRows'); petr.innerHTML =
+        '<div class="hh-head pet-row"><span>Name</span><span>Species</span><span>Breed</span><span>Walks/day</span><span>Notes</span><span></span></div>';
+      (d.pets || []).forEach(p => petr.appendChild(petRow(p)));
+
+      const dr = $('#dinnerRows'); dr.innerHTML = '';
+      WDAYS.forEach(([day]) => dr.appendChild(dinnerRow(day, (d.dinner || {})[day] || {})));
+    }
+
+    async function loadHousehold() {
+      try { renderHousehold(await api('/api/household')); }
+      catch (e) { toast(e.message, 'err'); }
+    }
+
+    $('#addPersonBtn').addEventListener('click', () => $('#peopleRows').appendChild(personRow()));
+    $('#addPetBtn').addEventListener('click', () => $('#petRows').appendChild(petRow()));
+
+    async function saveHousehold(btn, url, payload) {
+      busy(btn, true, 'Saving…');
+      try { renderHousehold(await api(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })); toast('Saved', 'ok'); }
+      catch (e) { toast(e.message, 'err'); } finally { busy(btn, false); }
+    }
+
+    $('#savePeopleBtn').addEventListener('click', () => {
+      const people = $$('#peopleRows .people-row').filter(r => !r.classList.contains('hh-head')).map(r => ({
+        contact_id: r.dataset.cid || null,
+        name: $('.p-name', r).value.trim(),
+        role: $('.p-role', r).value,
+        birth_date: $('.p-bd', r).value || null,
+      })).filter(p => p.name);
+      saveHousehold($('#savePeopleBtn'), '/api/household/people', { people });
+    });
+
+    $('#savePetsBtn').addEventListener('click', () => {
+      const pets = $$('#petRows .pet-row').filter(r => !r.classList.contains('hh-head')).map(r => ({
+        id: r.dataset.pid || null,
+        name: $('.pt-name', r).value.trim(),
+        species: $('.pt-species', r).value.trim(),
+        breed: $('.pt-breed', r).value.trim(),
+        walks_per_day: $('.pt-walks', r).value.trim(),
+        notes: $('.pt-notes', r).value.trim(),
+      })).filter(p => p.name);
+      saveHousehold($('#savePetsBtn'), '/api/household/pets', { pets });
+    });
+
+    $('#saveDinnerBtn').addEventListener('click', () => {
+      const dinner = $$('#dinnerRows .dinner-row').map(r => ({
+        day: r.dataset.day,
+        cook_id: $('.d-cook', r).value || null,
+        dish_notes: $('.d-notes', r).value.trim(),
+      }));
+      saveHousehold($('#saveDinnerBtn'), '/api/household/dinner', { dinner });
+    });
+
+    /* ---- History ---- */
+    async function loadHistory() {
+      const list = $('#histList');
+      if (!HISTORY_ON) { list.innerHTML = '<div class="empty">Run history is off. Apply <code>supabase/migrations/0001_schedule_runs.sql</code> and set SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY.</div>'; return; }
+      list.innerHTML = '<div class="empty">Loading…</div>';
+      try {
+        const d = await api('/api/history?limit=12');
+        if (!d.runs.length) { list.innerHTML = '<div class="empty">No saved runs yet. Generate a schedule to start the history.</div>'; return; }
+        list.innerHTML = d.runs.map(r => {
+          const when = (r.created_at || '').replace('T', ' ').slice(0, 16);
+          const nf = (r.flags || []).length;
+          return `<details class="run"><summary>
+              <span class="w">Week of ${esc(r.week)}</span>
+              <span class="pill">${esc(r.format)}</span>
+              ${nf ? `<span class="chip" style="padding:.2rem .55rem">⚑ ${nf}</span>` : ''}
+              <span class="spacer" style="flex:1"></span>
+              <span class="meta">${esc(when)}</span>
+            </summary>
+            <div class="body">
+              <button class="btn ghost histcopy" data-text="${esc(r.schedule)}" style="margin-bottom:.6rem">⧉ Copy</button>
+              <pre class="schedule">${esc(r.schedule)}</pre>
+            </div></details>`;
+        }).join('');
+        $$('.histcopy').forEach(b => b.addEventListener('click', async () => {
+          try { await navigator.clipboard.writeText(b.dataset.text); toast('Copied', 'ok'); } catch { toast('Copy failed', 'err'); }
+        }));
+      } catch (e) { list.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`; }
+    }
+    $('#histRefresh').addEventListener('click', loadHistory);
+
+    /* ---- Init ---- */
+    loadConfig();
+    loadWork();
+    loadHousehold();
   </script>
 </body>
 </html>

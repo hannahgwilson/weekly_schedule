@@ -84,6 +84,8 @@ def fetch_events(calendar_id: str, start: datetime.datetime, end: datetime.datet
             "end": end_raw,
             "all_day": "date" in event["start"],
             "calendar": calendar_id,
+            "id": event.get("id"),
+            "html_link": event.get("htmlLink"),
         })
 
     return events
