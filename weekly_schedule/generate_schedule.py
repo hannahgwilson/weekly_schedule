@@ -23,9 +23,9 @@ import pyperclip
 import yaml
 from dotenv import load_dotenv
 
-from db import load_household_from_db
-from gcal import fetch_week_events, get_credentials
-from open_brain import display_open_brain_notes, fetch_open_brain_notes, format_open_brain_for_prompt
+from weekly_schedule.db import load_household_from_db
+from weekly_schedule.gcal import fetch_week_events, get_credentials
+from weekly_schedule.open_brain import display_open_brain_notes, fetch_open_brain_notes, format_open_brain_for_prompt
 
 # ---------------------------------------------------------------------------
 # Setup
@@ -33,7 +33,7 @@ from open_brain import display_open_brain_notes, fetch_open_brain_notes, format_
 
 load_dotenv()
 
-CONFIG_PATH = Path(__file__).parent / "config.yaml"
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.yaml"
 
 # Events to filter out of GCal results
 # Customize these patterns for your household — e.g., therapist names, hold blocks, etc.
@@ -392,7 +392,7 @@ def suggest_gym_days(work_analysis: dict, fixed_gym_day: str = "monday") -> list
             "first_meeting": fri_first.strftime("%I:%M%p").lstrip("0").lower() if fri_first else None,
             "note": note,
             "priority": 0,  # morning gym is great
-            "marthe_early_helpful": True,  # flag that au pair starting early would help
+            "au_pair_early_helpful": True,  # flag that au pair starting early would help
         })
 
     # Sort: prefer before-work/morning, then after-work
@@ -481,12 +481,12 @@ SIGNAL DENSITY — every bullet must earn its line:
 - NO filler bullets stating the absence of a thing ("No gym today", "No coverage gap",
   "No babysitter needed", "Flexible day"). Just omit.
 - NO redundant parentheticals on dinner lines: write "{ra} dinner", NOT
-  "{ra} dinner (H out for book club)". The reason is already visible above the dinner line.
-- NO redundant parentheticals like "(M covering)" or "(R doing Wilson)" when the handoff
+  "{ra} dinner ({pa} out for book club)". The reason is already visible above the dinner line.
+- NO redundant parentheticals like "({ma} covering)" or "({ra} doing {child})" when the handoff
   is already implied by the day's structure.
-- NO restating quick-notes content as a per-day bullet — if "M on overnight Thu-Sun" is
-  in quick notes, do not also write "M on overnight duty" under Thursday.
-- NO hour-math narration in daily entries (e.g. "M: standard Friday would be 8-3:30 but
+- NO restating quick-notes content as a per-day bullet — if "{ma} on overnight Thu-Sun" is
+  in quick notes, do not also write "{ma} on overnight duty" under Thursday.
+- NO hour-math narration in daily entries (e.g. "{ma}: standard Friday would be 8-3:30 but
   covering — all hours overtime"). Hour totals belong in flags/asks if anywhere.
 - NO "TBD" lines. If the answer isn't in the inputs, omit the line.
 - Better 3 high-signal bullets than 7 padded ones.
@@ -587,7 +587,7 @@ DINNER RULES:
   - Never write "TBD" or "no dinner assignment". Either name a cook, name an out-of-home
     plan, or (travel only) omit.
 - Dinner bullets are bare: "{ra} dinner", "{pa} chicken 🐔". Do NOT add parentheticals
-  like "(H out for book club)" — the reason is already visible elsewhere in the day.
+  like "({pa} out for book club)" — the reason is already visible elsewhere in the day.
 
 FAMILY DINNER:
 - One night per week, everyone ({pa}, {ra}, {ma}) eats together at home. This is also when {pa}+{ma} do their weekly check-in.
@@ -847,7 +847,7 @@ def build_user_prompt(config: dict, context: dict, gcal_events: dict | None, man
             if g["timing"] == "before_work":
                 parts.append(f"    * {g['day'].title()}: GYM BEFORE WORK — {g['note']}. Goes to gym near home, then commutes to office late.")
             elif g["timing"] == "morning":
-                au_pair_note = f" Consider asking {au_pair.title()} to start early on Friday so they can go first thing." if g.get("marthe_early_helpful") else ""
+                au_pair_note = f" Consider asking {au_pair.title()} to start early on Friday so they can go first thing." if g.get("au_pair_early_helpful") else ""
                 parts.append(f"    * {g['day'].title()}: GYM FRIDAY MORNING — {g['note']}. Home all day, gym in the morning before nap routine.{au_pair_note}")
             else:
                 parts.append(f"    * {g['day'].title()}: gym after work — {g['note']}.")

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from ruamel.yaml import YAML
 
-CONFIG_PATH = Path(__file__).parent / "config.yaml"
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.yaml"
 
 _yaml = YAML()
 _yaml.preserve_quotes = True

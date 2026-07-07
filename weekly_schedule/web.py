@@ -37,7 +37,7 @@ from fastapi.templating import Jinja2Templates
 
 load_dotenv()
 
-from generate_schedule import (
+from weekly_schedule.generate_schedule import (
     analyze_work_calendar,
     build_user_prompt,
     compute_week_context,
@@ -49,11 +49,11 @@ from generate_schedule import (
     pull_gcal_events,
     suggest_gym_days,
 )
-from entity_extraction import drain_entity_queue
-from open_brain import capture_thoughts, fetch_open_brain_notes
-import config_io
-import db
-import runs
+from weekly_schedule.entity_extraction import drain_entity_queue
+from weekly_schedule.open_brain import capture_thoughts, fetch_open_brain_notes
+from weekly_schedule import config_io
+from weekly_schedule import db
+from weekly_schedule import runs
 
 app = FastAPI(title="Weekly Schedule")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))

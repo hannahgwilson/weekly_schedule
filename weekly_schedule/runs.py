@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 
-from db import get_client, _user_id
+from weekly_schedule.db import get_client, _user_id
 
 TABLE = "schedule_runs"
 
