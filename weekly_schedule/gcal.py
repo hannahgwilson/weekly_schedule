@@ -13,12 +13,12 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
-TOKEN_PATH = Path(__file__).parent / "token.json"
+TOKEN_PATH = Path(__file__).resolve().parent.parent / "token.json"
 
 
 def _run_oauth_flow():
     """Run the full OAuth browser flow to get new credentials."""
-    creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
+    creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH") or str(Path(__file__).resolve().parent.parent / "credentials.json")
     if not Path(creds_path).exists():
         raise FileNotFoundError(
             f"Google credentials file not found at '{creds_path}'.\n"

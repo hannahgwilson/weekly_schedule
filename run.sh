@@ -16,7 +16,7 @@ echo "  $(date '+%A, %B %d %Y at %I:%M %p')"
 echo "================================================"
 echo ""
 
-python3 generate_schedule.py
+python3 -m weekly_schedule.generate_schedule
 
 echo ""
 echo "Press any key to close..."
