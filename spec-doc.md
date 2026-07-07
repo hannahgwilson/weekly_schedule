@@ -2,13 +2,49 @@
 
 ## Overview
 
-An AI-assisted tool that generates a weekly household schedule and sends it to a WhatsApp group every Sunday. The schedule coordinates childcare, pet care, meals, gym scheduling, and adult schedules for a household with two parents, an au pair, a toddler, and a dog.
+An AI-assisted tool that generates a weekly household schedule to share with the family and caregivers each Sunday. The schedule coordinates childcare, pet care, meals, gym scheduling, and adult work schedules for a household with two parents, an au pair, a toddler, and a dog.
+
+It runs two ways from the same pipeline:
+- **CLI** — `python -m weekly_schedule.generate_schedule [YYYY-MM-DD]`, output copied to the clipboard for pasting into WhatsApp.
+- **Web app** — a small FastAPI single-page app (`python -m uvicorn weekly_schedule.web:app`) with four views: **Run**, **Calendar**, **Configuration**, and **History**.
+
+Household data (people, pets, schedules, recurring events, dinner defaults) lives in **Supabase** and is edited in the web app's Configuration page — no hand-editing YAML or the database. App-behavior settings (output format, group name, emoji map, excluded-event patterns, and the work-calendar id) live in `config.yaml`.
+
+---
+
+## System Architecture
+
+| Layer | Where it lives |
+|-------|----------------|
+| Household / recurring / dinner data | **Supabase** (family-calendar extension of [Open Brain / OB1](https://github.com/NateBJones-Projects/OB1)), read/written via `weekly_schedule/db.py` |
+| App-behavior settings + work-calendar id | `config.yaml` (`schedule_output` + `calendars` blocks), round-tripped via `config_io.py` |
+| Personal & family calendar ids, API keys, Supabase creds | `.env` |
+| Scheduling logic + Claude prompt | `weekly_schedule/generate_schedule.py` |
+| Web app | `weekly_schedule/web.py` (JSON API) + `weekly_schedule/templates/index.html` (single-page UI) |
+| Run history (optional) | Supabase `schedule_runs` (migration in `supabase/migrations/`) |
+
+`load_config()` merges the Supabase household data with the `config.yaml` app-behavior settings at runtime. Conflict/coverage detection happens **inside the Claude prompt**, not as structured Python — the prompt encodes the household's rules as instructions, filled with the real names via template variables.
+
+---
+
+## Web App & Configuration
+
+A single-page app (vanilla JS + fetch) over a small FastAPI JSON API. A shared week-picker in the top bar drives every view.
+
+- **Run** — choose a week and output format, capture this week's notes to Open Brain, generate the schedule (~30–60s), and copy it. Warning/ask lines are lifted into a highlighted **flags & asks** strip.
+- **Calendar** — a 7-day grid of the linked Google Calendars, each event deep-linking back to Google Calendar.
+- **Configuration** — edit everything that used to require hand-editing YAML or SQL:
+  - **Work schedules** — each adult's work days, hours, and commute; the au pair's per-day hours (with a *balance* flex day). Written back to Supabase (`household_details` + `caregiver_daily_hours`).
+  - **Work calendar** — the Google Calendar whose meetings drive ETA-home and gym timing. Editable and clearable (blank = none), so a job change doesn't leave a stale calendar feeding the schedule.
+  - **People, pets & dinner defaults** — full add / edit / remove of household members and pets, and per-day dinner defaults (cook + dish note). People/pets save by reconciliation (omitted rows are deleted; all foreign keys cascade or null).
+  - **Output settings** — default format, group name, excluded-event regexes, and the keyword→emoji map.
+- **History** — re-open previously generated schedules without regenerating (requires the `schedule_runs` migration).
 
 ---
 
 ## Household Members
 
-The tool is configured via `config.yaml`. The example configuration uses these placeholder names:
+Household members and their scheduling attributes are stored in Supabase and edited in the web app's Configuration page. The example household below uses placeholder names:
 
 | Person | Role | Key Constraints |
 |--------|------|-----------------|
@@ -18,7 +54,7 @@ The tool is configured via `config.yaml`. The example configuration uses these p
 | Baby | Toddler (18mo) | Swim Tue 11am (30min). Forest school Thu 9–10:30am. Nap ~1–3:30/4pm daily. Bed 7:30pm. Wake 6:30–7am. |
 | Buddy | Dog (3yo) | 4 walks/day. A walks at 6:30am. Dog walker Tue–Thu (30min midday). J confirmed for 10pm walk every night. |
 
-> **Note:** These are placeholder names. The system prompt uses template variables (`{primary}`, `{pa}`, `{partner}`, `{ra}`, etc.) that are filled from `config.yaml` at runtime — so the schedule output always uses your actual household names.
+> **Note:** These are placeholder names. The system prompt uses template variables (`{primary}`, `{pa}`, `{partner}`, `{ra}`, etc.) that are filled from your Supabase household data at runtime — so the schedule output always uses your actual household names.
 
 ---
 
@@ -120,6 +156,8 @@ The generator analyzes the primary scheduler's work calendar to compute:
 
 Filtered from work calendar: "ask before scheduling" blocks (commute/family holds), birthdays, therapy appointments.
 
+The work calendar is chosen in the Configuration page and stored in `config.yaml` `calendars.work` (falling back to `GCAL_WORK_ID` in `.env` only if unset). A blank value means no work calendar is pulled — so when a job changes, the old calendar can be cleared or swapped from the UI without editing files.
+
 ---
 
 ## Gym Scheduling
@@ -193,7 +231,7 @@ Compact text table with columns: day, S hours, dinner, notes. Most information-d
 ### Pulled automatically
 - Google Calendar: personal, shared family, and work calendars
 - Open Brain MCP: recent thoughts (last 7 days) + semantic search for upcoming week content (meal plans, events, travel, schedule changes)
-- Fixed recurring rules from config.yaml (au pair hours, children's classes, dog walker, cleaner cadence, coop shifts)
+- Household + recurring data from Supabase (adults' work schedules, au pair hours, children's classes, dog walker, cleaner cadence, coop shifts, dinner defaults)
 - Work calendar analysis (last meeting times, late starts, gym windows)
 
 ### Filtered out automatically
@@ -212,13 +250,14 @@ Compact text table with columns: day, S hours, dinner, notes. Most information-d
 ## Automation Phases
 
 ### Phase 1 — MVP (AI-Assisted) ← CURRENT
-- Local Python script on macOS
-- Interactive setup wizard (`setup.py`) generates personalized `config.yaml`
+- Local Python package (`weekly_schedule/`) on macOS — CLI + FastAPI web app
+- Household data in **Supabase**, edited in the web app's Configuration page; interactive setup wizard (`setup_wizard.py`) seeds the `config.yaml` app-behavior settings
 - macOS launchd trigger at **Sunday 1pm** (toddler nap time)
-- Pulls GCal events, analyzes work calendar, prompts for notes
+- Pulls GCal events, analyzes work calendar, prompts for / captures notes
 - Claude API (claude-sonnet-4-6) generates schedule with gym suggestions
-- Output copied to clipboard; paste into WhatsApp and pin
-- All secrets in `.env`, household config in `config.yaml`
+- Output copied to clipboard (CLI) or copy button (web); paste into WhatsApp and pin
+- Optional run history persisted to Supabase (`schedule_runs`)
+- Secrets in `.env`; app-behavior settings in `config.yaml`
 
 ### Phase 2 — Semi-Automated
 - Move cron to **GitHub Actions** (no Mac dependency)
@@ -237,7 +276,9 @@ Compact text table with columns: day, S hours, dinner, notes. Most information-d
 |-------------|---------|--------|
 | Google Calendar API | Personal + family + work calendars | ✅ Connected |
 | Claude API | Schedule generation (claude-sonnet-4-6) | ✅ Connected |
+| Supabase | Household/recurring/dinner data + run history (family-calendar extension of OB1) | ✅ Connected |
 | Open Brain MCP | Auto-pull notes (meal plans, events, schedule changes) | ✅ Connected via StreamableHTTP |
+| FastAPI web app | Browser UI: run, calendar, editable configuration, history | ✅ Built |
 | WhatsApp (Green API) | Send to family chat | Phase 2 |
 | macOS launchd | Sunday 1pm trigger | ✅ Configured |
 | GitHub Actions | Phase 2 cron replacement | Phase 2 |
@@ -272,6 +313,13 @@ Compact text table with columns: day, S hours, dinner, notes. Most information-d
 - [x] "Quick notes before the week" summary section in all output formats
 - [x] Template-based name replacement (no fragile regex on single letters)
 - [x] GCal auto-reauth when refresh token expires (no manual `rm token.json`)
+- [x] Household data served from Supabase (family-calendar extension), merged with `config.yaml` app settings
+- [x] Web app: Run / Calendar / Configuration / History views over a FastAPI JSON API
+- [x] Configuration page edits adults' work schedules (work days/hours/commute; au pair per-day hours) with Supabase write-back
+- [x] Work calendar editable/clearable from the UI (`calendars.work`); blank = none, no stale calendar after a job change
+- [x] Household CRUD: add/edit/remove people & pets, and per-day dinner defaults (reconcile-based save; FKs cascade/null)
+- [x] Optional run history persisted to Supabase `schedule_runs`
+- [x] Code organized as a `weekly_schedule/` package (CLI: `python -m weekly_schedule.generate_schedule`; web: `uvicorn weekly_schedule.web:app`)
 - [ ] Tighten Claude output to suppress reasoning/deliberation in schedule text
 - [ ] Test with different weeks to verify edge cases
 - [ ] Validate against example schedules in `docs/example_schedules`
