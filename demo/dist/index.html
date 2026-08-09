@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Weekly Schedule — a household scheduler that reasons about hand-offs</title>
+<style>
+  :root {
+    --bg: #fbfbfa; --fg: #1a1a19; --muted: #6b6b66;
+    --rule: #e2e2dd; --card: #ffffff; --accent: #2f5d50; --accent-soft: #eef3f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614; --fg: #ececea; --muted: #9a9a93;
+      --rule: #2e2e2a; --card: #1e1e1b; --accent: #7fb3a1; --accent-soft: #1f2a26;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 4rem 1.5rem 6rem;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.6 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 46rem; margin: 0 auto; }
+  .eyebrow {
+    font-size: .75rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 .75rem;
+  }
+  .eyebrow a { color: inherit; }
+  h1 { font-size: clamp(1.6rem, 4.5vw, 2.4rem); line-height: 1.2; margin: 0 0 1rem; font-weight: 620; }
+  .lede { font-size: 1.075rem; color: var(--muted); margin: 0 0 2rem; }
+  .lede strong { color: var(--fg); font-weight: 600; }
+  h2 {
+    font-size: .75rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+    margin: 3rem 0 1rem; padding-bottom: .6rem; border-bottom: 1px solid var(--rule);
+  }
+  h3 { font-size: 1rem; font-weight: 620; margin: 0 0 .35rem; }
+  p { margin: 0 0 1rem; }
+  .body-muted { color: var(--muted); }
+
+  .cta {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--accent); color: var(--bg); text-decoration: none;
+    padding: .7rem 1.15rem; border-radius: 8px; font-weight: 600; font-size: .95rem;
+    transition: transform .15s, opacity .15s;
+  }
+  .cta:hover { transform: translateY(-1px); opacity: .92; }
+  .cta-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: .75rem; }
+  .cta-note { font-size: .82rem; color: var(--muted); }
+
+  .card {
+    background: var(--card); border: 1px solid var(--rule);
+    border-radius: 10px; padding: 1.3rem 1.45rem; margin-bottom: .75rem;
+  }
+  .card p:last-child { margin-bottom: 0; }
+  .card p { font-size: .92rem; color: var(--muted); }
+  .card p strong { color: var(--fg); font-weight: 600; }
+  .tradeoff {
+    margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--rule);
+    font-size: .86rem; color: var(--muted);
+  }
+  .tradeoff b { color: var(--fg); font-weight: 600; }
+
+  /* pipeline diagram */
+  .pipe { margin: 0 0 1rem; }
+  .pipe-row { display: flex; gap: .6rem; align-items: stretch; flex-wrap: wrap; }
+  .pipe-sources { display: flex; flex-direction: column; gap: .4rem; flex: 1 1 13rem; }
+  .box {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
+    padding: .55rem .7rem; font-size: .82rem;
+  }
+  .box b { display: block; font-weight: 600; font-size: .84rem; }
+  .box span { color: var(--muted); font-size: .76rem; }
+  .box.accent { background: var(--accent-soft); border-color: var(--accent); }
+  .pipe-stage { display: flex; flex-direction: column; justify-content: center; gap: .4rem; flex: 1 1 11rem; }
+  .arrow { align-self: center; color: var(--muted); font-size: 1.1rem; padding: 0 .1rem; }
+  /* The row wraps to a single column a little below the main column width —
+     point the arrows down once it does. */
+  @media (max-width: 760px) { .arrow { transform: rotate(90deg); } }
+
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+  td:first-child { white-space: nowrap; font-weight: 560; width: 11rem; }
+  td.dim { color: var(--muted); font-weight: 400; }
+
+  ul.plain { margin: 0 0 1rem; padding-left: 1.15rem; color: var(--muted); font-size: .92rem; }
+  ul.plain li { margin: .3rem 0; }
+  ul.plain strong { color: var(--fg); font-weight: 600; }
+
+  code {
+    font: .86em ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: var(--accent-soft); padding: .1rem .3rem; border-radius: 4px;
+  }
+  .sample {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 1rem 1.15rem; font: .82rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap; overflow-x: auto; color: var(--fg); margin: 0 0 1rem;
+  }
+  footer {
+    margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
+    font-size: .82rem; color: var(--muted);
+  }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow"><a href="../">Hannah Wilson</a> · Applied AI</p>
+  <h1>A household scheduler that reasons about hand-offs</h1>
+  <p class="lede">
+    Every week, one person in a household holds the whole plan in their head: who is home when, who
+    covers the gap between the au pair leaving and a parent getting back, who cooks, when a sitter
+    needs booking. This turns three Google Calendars, a notes graph and a household database into
+    <strong>one message the family and the caregiver can both act on</strong> — and, more usefully,
+    flags the places where the week does not actually work.
+  </p>
+
+  <div class="cta-row">
+    <a class="cta" href="app.html">Open the live demo →</a>
+    <span class="cta-note">Real UI, fictional household, no sign-in.</span>
+  </div>
+
+  <h2>The problem it solves</h2>
+  <p class="body-muted">
+    A shared calendar tells you what is scheduled. It does not tell you that Thursday is broken.
+    The information needed to notice that is spread across four places that never meet: the work
+    calendar knows a meeting runs to 6:30, the household database knows the au pair's contract ends
+    at 6:30, a config value knows the commute is 35 minutes, and nothing at all knows that the other
+    parent is away that night. The gap only becomes visible when you join all four — which is
+    exactly the joining a person does in their head every Sunday evening.
+  </p>
+  <p class="body-muted">
+    The output is deliberately a <em>message</em>, not a dashboard. It has to be pasteable into a
+    family chat and readable by a caregiver on a phone, which is why the artifact is plain text with
+    emoji rather than a UI nobody outside the household will log into.
+  </p>
+
+  <h2>How it works</h2>
+  <div class="pipe">
+    <div class="pipe-row">
+      <div class="pipe-sources">
+        <div class="box"><b>Google Calendar</b><span>personal · family · work, filtered by regex</span></div>
+        <div class="box"><b>Open Brain</b><span>free-text notes captured during the week</span></div>
+        <div class="box"><b>Supabase</b><span>people, contracted hours, pets, dinner rota</span></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-stage">
+        <div class="box"><b>Week context</b><span>recurring events resolved onto real dates</span></div>
+        <div class="box"><b>Work analysis</b><span>ETA home per day, gym windows</span></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-stage">
+        <div class="box accent"><b>Claude</b><span>conflicts, coverage, dinner, sitter timing</span></div>
+        <div class="box"><b>Flag extraction</b><span>warnings pulled back out as chips</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="body-muted">
+    A generated week ends with the part that actually earns its keep — the asks, derived rather
+    than transcribed:
+  </p>
+  <div class="sample">‼️ Flags &amp; asks:
+• Thu: 40min coverage gap — Inês ends 6:30, Priya home ~7:10, Dan away.
+  @Inês can you stay until 7:15? That's 45min overtime 🐣
+• Sat: sitter needed 6:45pm–late, both parents out. Book by Wednesday 🐣
+• Inês is at 27.5h before Friday — Friday needs 2.5h to hit the 30h target</div>
+  <p class="body-muted">
+    None of those three lines appears on any calendar. Each is the result of joining a meeting
+    end-time to a commute estimate to a contracted finish time to a weekly hours target.
+  </p>
+
+  <h2>Three decisions worth defending</h2>
+
+  <div class="card">
+    <h3>Conflict detection lives in the prompt, not in Python</h3>
+    <p>
+      The obvious build is a rules engine: intervals per person, detect overlaps, emit conflicts.
+      I started there and abandoned it. The rules that matter are not interval overlaps — they are
+      <strong>"a two-year-old cannot be left with a six-year-old", "45 minutes before the event if
+      both parents are out", "the commute makes a 6:30 finish a 7:10 arrival"</strong>. Encoding
+      those as predicates produced a combinatorial mess that broke on every household change, and
+      the household changes constantly.
+    </p>
+    <p>
+      Stating them as constraints in the system prompt and letting the model do the joining
+      collapsed several hundred lines of brittle logic and — the part I did not expect — handled
+      cases I never enumerated, like noticing that a 6:10 arrival for a 6:30 family dinner has no
+      slack in it.
+    </p>
+    <p class="tradeoff">
+      <b>The trade-off:</b> non-determinism in something a family relies on. Mitigated by keeping
+      the output honest rather than confident — every inference is phrased as an ask a human
+      confirms, and a deterministic post-pass scrapes the warning markers back out into structured
+      flags, so a missed warning is visible as an empty chip row rather than silent.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>The unstructured output gets structured on the way back out</h3>
+    <p>
+      Claude returns a WhatsApp message. The UI needs badges, history and search. Rather than force
+      the model into JSON — which degraded the prose quality that is the entire point of the
+      artifact — the app generates prose and then <strong>re-derives structure from it</strong>:
+      <code>_extract_flags()</code> scrapes lines carrying warning markers or keywords like
+      <em>coverage gap</em> and <em>overtime</em>, dedupes them, and surfaces them as chips.
+    </p>
+    <p class="tradeoff">
+      <b>The trade-off:</b> a heuristic over generated text is not a contract. It is cheap and it
+      degrades gracefully — a missed line costs a chip, not a broken response — which is the right
+      failure mode for a badge. It would be the wrong one for anything downstream depends on.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Everything a life change touches is editable in the UI</h3>
+    <p>
+      The first version kept the household in YAML. It stopped being used the week a job changed,
+      because updating it meant editing a file. Now people, pets, contracted caregiver hours, work
+      days, commute times and the dinner rota are <strong>all editable from the Configuration
+      page</strong> and written back to Supabase; the app-behaviour settings that stay in YAML are
+      round-tripped with <code>ruamel</code> so a save does not strip the file's comments.
+    </p>
+    <p>
+      People edits reconcile rather than append — a row you delete is deleted, with foreign keys
+      cascading or nulling — because the alternative is a config file that only ever grows.
+    </p>
+    <p class="tradeoff">
+      <b>The trade-off:</b> a schema to migrate instead of a file to edit. Worth it: the tool is
+      only useful if it survives contact with a household that changes.
+    </p>
+  </div>
+
+  <h2>Stack</h2>
+  <table>
+    <tr><th>Layer</th><th>Choice</th></tr>
+    <tr><td>Generation</td><td class="dim">Anthropic API — system prompt per output format, household constraints in the user prompt</td></tr>
+    <tr><td>Data</td><td class="dim">Supabase / Postgres — household, contracted hours, recurring events, run history</td></tr>
+    <tr><td>Calendars</td><td class="dim">Google Calendar API, OAuth, three calendars merged and regex-filtered</td></tr>
+    <tr><td>Notes</td><td class="dim">Open Brain (OB1) knowledge graph over MCP — free-text capture, entity extraction</td></tr>
+    <tr><td>Server</td><td class="dim">FastAPI — a JSON API of ~14 endpoints</td></tr>
+    <tr><td>Front end</td><td class="dim">One HTML file, vanilla JS, no build step</td></tr>
+    <tr><td>This demo</td><td class="dim">The same front end, with a shim answering <code>/api/*</code> from fixtures</td></tr>
+  </table>
+
+  <h2>What the demo is and is not</h2>
+  <ul class="plain">
+    <li><strong>Is:</strong> the production front end, unmodified, built from the same template file
+        the running app renders. The Configuration, Calendar and History views are fully
+        interactive.</li>
+    <li><strong>Is not:</strong> a live generation. <em>Run schedule</em> replays a schedule the real
+        pipeline produced for the fictional week rather than calling Claude — a static site cannot
+        hold an API key, and one that could would be a key anyone could spend.</li>
+    <li><strong>Fictional throughout.</strong> The household, the employer, the calendars and the
+        generated week are invented for this page. No real family data is published here.</li>
+  </ul>
+
+  <footer>
+    Source: <a href="https://github.com/hannahgwilson/weekly_schedule">github.com/hannahgwilson/weekly_schedule</a>
+    · <a href="../">Back to portfolio</a>
+  </footer>
+</main>
+</body>
+</html>

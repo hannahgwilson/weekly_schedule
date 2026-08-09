@@ -28,6 +28,14 @@ The result is a clean, WhatsApp-ready schedule assembled by Claude, from the com
 - **Computes recurring events** — cleaner cadence, coop/volunteer shifts
 - **Three output formats** — bullets (best for phone), person view, or compact grid
 
+## Try it
+
+**[Live demo →](https://hannahgwilson.github.io/portfolio/weekly-schedule/)** — the real front end
+running on an invented household, no sign-in, nothing to install. The Configuration, Calendar and
+History views are fully interactive; *Run schedule* replays a schedule the pipeline produced for
+that fictional week rather than calling Claude, since a static page cannot hold an API key. Built
+by [`demo/build_demo.py`](demo/) from the same template the live app renders.
+
 ## Web App
 
 A small FastAPI app wraps the generator in a browser UI:
@@ -203,6 +211,7 @@ The runtime code lives in the `weekly_schedule/` package:
 | `config.example.yaml` | Example app-behavior config (copy to `config.yaml`) |
 | `.env.example` | Template for `.env` |
 | `supabase/` | Migrations + CLI config for the run-history table |
+| `demo/` | Static, backend-free build of the web app for the public demo |
 | `docs/example_schedules` | Example generated output |
 | `spec-doc.md` | Full product spec |
 | `com.weekly-schedule.plist` / `run.sh` | macOS launchd auto-run (Sunday 1pm) |
