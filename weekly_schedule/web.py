@@ -112,8 +112,19 @@ def _calendar_payload(week_monday: datetime.date) -> dict:
     days = []
     for i, name in enumerate(DAYS):
         date = week_monday + datetime.timedelta(days=i)
+        def _order(e: dict) -> tuple[int, str]:
+            """All-day first, then timed chronologically.
+
+            Sort on a 24-hour key, not on the 12-hour display string — the
+            latter orders '10:00am' < '2:00pm' < '9:30am'.
+            """
+            if e.get("all_day"):
+                return (0, "")
+            t = parse_event_time(e.get("start", ""))
+            return (1, t.strftime("%H:%M") if t else "")
+
         items = []
-        for e in by_day.get(name, []):
+        for e in sorted(by_day.get(name, []), key=_order):
             start_t = parse_event_time(e.get("start", "")) if not e.get("all_day") else None
             end_t = parse_event_time(e.get("end", "")) if not e.get("all_day") else None
             items.append({
@@ -124,8 +135,6 @@ def _calendar_payload(week_monday: datetime.date) -> dict:
                 "calendar": e.get("calendar_label", ""),
                 "link": e.get("html_link"),
             })
-        # All-day first, then timed in chronological order (timed already sorted).
-        items.sort(key=lambda x: (not x["all_day"], x["start"] or ""))
         days.append({
             "name": name,
             "label": name.capitalize(),
