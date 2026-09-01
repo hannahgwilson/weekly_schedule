@@ -33,6 +33,12 @@ The result is a clean, WhatsApp-ready schedule assembled by Claude, from the com
 A small FastAPI app wraps the generator in a browser UI:
 
 ```bash
+./open-app.sh    # starts it if it isn't already up, then opens the browser
+```
+
+or by hand:
+
+```bash
 python -m uvicorn weekly_schedule.web:app --port 8077
 # then open http://localhost:8077
 ```
@@ -206,6 +212,7 @@ The runtime code lives in the `weekly_schedule/` package:
 | `docs/example_schedules` | Example generated output |
 | `spec-doc.md` | Full product spec |
 | `com.weekly-schedule.plist` / `run.sh` | macOS launchd auto-run (Sunday 1pm) |
+| `open-app.sh` | Start the web UI and open it in the browser |
 
 **Never committed** (gitignored): `.env`, `config.yaml`, `credentials.json`, `token.json` — anything with real names, addresses, or secrets.
 
