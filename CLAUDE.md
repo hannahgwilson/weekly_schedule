@@ -56,6 +56,16 @@ Conflict/coverage detection happens **inside the Claude prompt**, not as structu
 - [weekly_schedule/gcal.py](weekly_schedule/gcal.py) — `fetch_events()` returns `id` +
   `html_link` (event deep-links).
 
+### Public demo
+[demo/](demo/) builds a static, backend-free copy of the web app for the portfolio Pages site
+(`/weekly-schedule/` under <https://hannahgwilson.github.io/portfolio/>). `build_demo.py` renders
+the **live** `templates/index.html` — never a fork of it — and splices in `demo_shim.js`, which
+replaces `window.fetch` and answers `/api/*` from the fictional fixtures in `demo_data.py`. It
+depends on string anchors in the app template and **fails the build** if one moves. Rebuild and
+commit `demo/dist/` after touching the template. The shim mirrors backend behaviour (it ports
+`_extract_flags`, matches the calendar/people sort keys, reconciles saves); keep it in step when
+the API changes. See [demo/README.md](demo/README.md).
+
 ### Supabase
 Household data is served by the family-calendar extension of OB1; this repo only carries the
 `schedule_runs` migration for the optional History view. Set `SUPABASE_URL`,
