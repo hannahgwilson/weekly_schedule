@@ -472,7 +472,7 @@ duties, or gym slots that day. Defaults are the floor; notes are the ceiling.
 
 TRAVEL DAYS:
 If a person is travelling or away on a day they normally have a recurring entry (pool,
-bookclub, forest school drop-off, gym, etc.), OMIT that entry entirely. Do NOT include it
+bookclub, a kid activity drop-off, gym, etc.), OMIT that entry entirely. Do NOT include it
 with "likely skipped", "check with X", or "pre-flagged" hedges in the daily breakdown.
 If a heads-up is needed (e.g. R should tell their pool team), put it in the quick-notes
 section as a directed ask, not as a daily bullet.
@@ -554,7 +554,12 @@ CRITICAL RULES:
 4. {pa} commutes to office Mon-Thu only. If anything requires them home before 6:30pm on a work day, flag it. {pa} is HOME on Fridays.
 5. {ma}'s BASE schedule is 45hrs/week (Mon 9-6 = 9hrs, Tue 8-5 = 9hrs, Wed 8-5 = 9hrs, Thu 8-6:30 = 10.5hrs, Fri = 7.5hrs to reach 45). Friday default is 8:00-3:30 (7.5hrs). Do NOT miscalculate — 8:00 to 1:30 is only 5.5hrs, NOT 7.5hrs. Any hours BEYOND their scheduled end time are "babysitting" — flag with 🐣 and explicit ask to @{aupair}.
 6. No coverage gaps — especially around {ma}'s start/end times and {pa}/{ra} transitions. See HANDOFF VALIDATION below.
-7. {ra}'s pool starts after 5:30pm. On Thursdays they go straight from school (do NOT come home first). On Tuesdays they come home first and CANNOT leave for pool until {pa} is home to take over {child}. State the specific time {ra} can leave based on {pa}'s ETA (e.g., "{ra} pool 🎱 ~6:15 after {pa} home"). {ra} uses this to coordinate with their pool team.
+7. Which days {ra} has pool — and whether they go straight from school or come home
+   first — is stated in HOUSEHOLD PREFERENCES. Do NOT assume any other day. Pool starts
+   after 5:30pm. On a "straight from school" day they do not come home first. On any
+   other pool day they come home first and CANNOT leave until {pa} is home to take over
+   {child} — state the specific time based on {pa}'s ETA (e.g., "{ra} pool 🎱 ~6:15 after
+   {pa} home"), which {ra} uses to coordinate with their pool team.
 
 HANDOFF VALIDATION — you MUST check this for every weekday:
 For each day Mon-Thu, compare {ma}'s END TIME with {pa}'s ETA HOME:
@@ -577,9 +582,12 @@ If {ma} is babysitting for an event where {pa}+{ra} are both leaving, {ma} must 
 DINNER RULES:
 - Every day Mon-Sun needs a named cook UNLESS {pa}+{ra} are both travelling/away that day.
   On travel days, omit the dinner bullet entirely.
-- Monday: {ra} (fixed)
-- Tuesday: {pa} — chicken (fixed, UNLESS {pa} has an evening event shortly after arriving home — in that case {ra} takes over chicken duty or it moves to another night. Flag the change.)
-- Wed-Sun: Assign {pa} or {ra} based on who is home and available.
+- Days with a default cook are listed under FIXED WEEKLY EVENTS ("Dinner: ..."). Those
+  defaults are fixed and come from the household database — use the day they are listed
+  on, and do not move a named dish (e.g. chicken 🐔) to a different night on your own.
+  The one exception: if that cook has an evening event shortly after arriving home, the
+  other parent takes over or it moves to another night — flag the change.
+- Days with no listed default: assign {pa} or {ra} based on who is home and available.
   - If one parent has an evening event, assign the OTHER parent.
   - If BOTH have an out-of-home dinner (reservation, dinner with friends), that reservation
     IS the dinner — name it ("Dinner out: Gage & Tollner 7pm 🍽️ {pa}+{ra}") and skip the
@@ -603,7 +611,7 @@ GROCERY SHOPPING:
 
 TONE:
 - Casual, warm, efficient — like a group text from a competent parent, not a corporate memo.
-- Use emojis naturally but don't overdo it: 🏊 swim, 🎱 pool, 🌳 forest school, 🏋️ gym, 🐔 chicken, 🧹 cleaner, ‼️ urgent, 🛒 coop, 🐣 babysitting
+- Use emojis naturally but don't overdo it: 🌳 outdoor/kid activity, 🏊 swim, 🎱 pool, 🏋️ gym, 🐔 chicken, 🧹 cleaner, ‼️ urgent, 🛒 coop, 🐣 babysitting
 - Do NOT narrate childcare coverage or dog walks unless something unusual needs flagging.
 """
 
@@ -638,9 +646,11 @@ Example:
 
 **Tue Apr 8:**
 • {ma}: 8-5
-• {child} swim 11am 🏊
-• {ra} pool 🎱 after 5:30
-• {pa} chicken 🐔, home ~6:15
+• {child} activity 9-12:30 🌳
+• {pa} dinner, home ~6:15
+
+NOTE: the example above illustrates LAYOUT ONLY. Never copy its events — take actual
+events from FIXED WEEKLY EVENTS and HOUSEHOLD PREFERENCES in the input.
 """
 
 FORMAT_PERSON = """\
@@ -668,11 +678,11 @@ Thu late meetings, home ~7:15. Fri home, morning gym 🏋️
 Sat coop 🛒 + groceries
 
 👨 {ra}:
-Mon dinner. Tue pool 🎱. Thu pool 🎱 straight from school.
+Mon dinner. Thu pool 🎱 straight from school.
 Home ~5 daily. 10pm {pet} as always.
 
 👶 {child}:
-Tue swim 11am 🏊. Thu forest school 🌳 9-10:30.
+Mon-Thu activity 🌳 9-12:30.
 
 🧑‍🍳 {ma}: 9-6 / 8-5 / 8-5 / 8-6:30 / 8-3:30
 Wed: family dinner 🍽️👨‍👩‍👦
@@ -694,9 +704,9 @@ Example:
 
        {ma} hrs |  dinner  |  notes
 Mon    9-6      |  {ra}       |  {pa} gym 🏋️ home ~7
-Tue    8-5      |  {pa} 🐔   |  swim 🏊, {ra} pool 🎱
+Tue    8-5      |  {pa}       |  🌳 activity 9-12:30
 Wed    8-5      |  {ra}       |  🧹 Cleaner. family dinner 🍽️👨‍👩‍👦
-Thu    8-6:30   |  🍣      |  🌳 forest school
+Thu    8-6:30   |  🍣      |  {ra} pool 🎱
 Fri    8-3:30   |  {pa}       |  {pa} home, morning gym 🏋️
 Sat    —        |  {pa}       |  {pa} coop 🛒 + groceries
 Sun    —        |  {ra}       |  {pa} gym 🏋️
@@ -800,19 +810,53 @@ def build_user_prompt(config: dict, context: dict, gcal_events: dict | None, man
         parts.append(f"  - Reminder: {partner.title()} is behind on coop shifts — nudge them to schedule")
     parts.append("")
 
-    # Fixed events from config
+    # Each adult's free-text preferences / stability notes. Editable in the Config page
+    # and stored in Supabase household_details — this is where recurring personal
+    # commitments (pool nights, gym pattern, WFH days) are authored.
+    pref_lines = []
+    for adult_name, adult_cfg in config["household"]["adults"].items():
+        blurb = " ".join(adult_cfg[f] for f in ("preferences", "notes") if adult_cfg.get(f))
+        if blurb:
+            pref_lines.append(f"  - {adult_name.title()}: {blurb}")
+    if pref_lines:
+        parts.append("HOUSEHOLD PREFERENCES & RECURRING COMMITMENTS (authoritative):")
+        parts.extend(pref_lines)
+        parts.append("  These come from the household database and are current. Where a general")
+        parts.append("  assumption conflicts with them, these win. Do not invent commitments not listed.")
+        parts.append("")
+
+    # Fixed events — derived from the household database rather than hardcoded, so
+    # adding or dropping an activity is a data change, not a prompt edit.
     child_config = config["household"]["children"].get(child, {})
-    swim_loc = child_config.get("swim", {}).get("location", "swim location")
     pet_config = config["household"]["pets"].get(pet, {})
-    dog_walker_name = pet_config.get("dog_walker", {}).get("name", "Dog walker")
+    dog_walker = pet_config.get("dog_walker", {}) or {}
+    dog_walker_name = dog_walker.get("name", "Dog walker")
+    dog_walker_days = set(dog_walker.get("days") or [])
+    primary_work_days = set(config["household"]["adults"].get(primary, {}).get("work_days") or [])
+    dinner_defaults = (config.get("dinner", {}) or {}).get("defaults", {}) or {}
 
     parts.append("FIXED WEEKLY EVENTS (always apply):")
-    parts.append(f"  - Mon: {partner.title()} dinner. {primary.title()} gym (lift) after work. {primary.title()} to office.")
-    parts.append(f"  - Tue: {child.title()} swim 11am 🏊 ({swim_loc}). Chicken Tuesday 🐔 ({primary.title()} cooks). {partner.title()} possibly at pool 🎱 after 5:30 (usually home first). {dog_walker_name} walks {pet.title()}. {primary.title()} to office.")
-    parts.append(f"  - Wed: {dog_walker_name} walks {pet.title()}. {primary.title()} to office.")
-    parts.append(f"  - Thu: {child.title()} forest school 9–10:30 🌳. {partner.title()} to pool 🎱 after 5:30 straight from school (does NOT come home first). {dog_walker_name} walks {pet.title()}. {primary.title()} to office.")
-    parts.append(f"  - Fri: {primary.title()} home (no office). No other fixed events.")
-    parts.append(f"  - Sat/Sun: Grocery shop at grocery store (see grocery rules). {primary.title()} tries to gym both days.")
+    for day in ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]:
+        bits = []
+        for act in (child_config.get("activities") or {}).values():
+            if day not in (act.get("days") or []):
+                continue
+            bit = f"{child.title()} {act.get('label', 'activity').lower()}"
+            if act.get("time"):
+                bit += f" {act['time']}"
+            if act.get("location"):
+                bit += f" ({act['location']})"
+            bits.append(bit)
+        if dinner_defaults.get(day):
+            bits.append(f"Dinner: {dinner_defaults[day]}")
+        if day in dog_walker_days:
+            bits.append(f"{dog_walker_name} walks {pet.title()}")
+        if day in primary_work_days:
+            bits.append(f"{primary.title()} to office")
+        parts.append(f"  - {day[:3].title()}: " + (". ".join(bits) + "." if bits else "No fixed events."))
+    parts.append(f"  - {primary.title()} is NOT in the office on any day not listed above.")
+    parts.append("  - Weekend: grocery shop (see grocery rules).")
+    parts.append("  Personal recurring commitments are in HOUSEHOLD PREFERENCES above — apply those too.")
     parts.append("")
 
     # Work schedule summary (computed from work calendar)

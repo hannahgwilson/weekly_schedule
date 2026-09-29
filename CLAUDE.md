@@ -30,9 +30,19 @@ editable and lives in `config.yaml` `calendars.work` (blank = none; falls back t
 `GCAL_WORK_ID` only if the key is absent) — `_resolve_cal_ids()` in
 [weekly_schedule/generate_schedule.py](weekly_schedule/generate_schedule.py) resolves it.
 Personal & family calendar ids come from `.env`. The adults' **work schedules** (work
-days/hours, commute, leaves/returns, au-pair daily hours) are editable in the Config page
+days/hours, commute, leaves/returns, au-pair daily hours, and the free-text **preferences**
+blob that feeds the Claude prompt) are editable in the Config page
 and written back to Supabase via `db.fetch_adult_schedules()` / `db.save_adult_schedule()`.
 Conflict/coverage detection happens **inside the Claude prompt**, not as structured Python.
+
+Children's **activities** pass through generically: `_build_children()` keys every event by
+its `activity_type` into `children.<name>.activities` (with a `days` list, so a Mon–Thu
+activity is one entry), and `build_user_prompt()` renders FIXED WEEKLY EVENTS from that —
+plus dog-walker days, dinner defaults, and work days. Adding an activity is a **data**
+change; no prompt edit. Same for the adults' `preferences` / `schedule_stability_notes`,
+which render as the HOUSEHOLD PREFERENCES block. Do not hardcode household specifics
+(a named activity, whose night chicken is, which days someone has pool) into the prompt —
+that creates a second source of truth that silently outranks Supabase.
 
 ### Web UI
 - [weekly_schedule/web.py](weekly_schedule/web.py) — FastAPI JSON API. Endpoints:
