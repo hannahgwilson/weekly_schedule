@@ -611,7 +611,9 @@ GROCERY SHOPPING:
 
 TONE:
 - Casual, warm, efficient — like a group text from a competent parent, not a corporate memo.
-- Use emojis naturally but don't overdo it: 🌳 outdoor/kid activity, 🏊 swim, 🎱 pool, 🏋️ gym, 🐔 chicken, 🧹 cleaner, ‼️ urgent, 🛒 coop, 🐣 babysitting
+- Use emojis naturally but don't overdo it: 🌳 outdoor/kid activity, 🎱 pool, 🏋️ gym, 🐔 chicken, 🧹 cleaner, ‼️ urgent, 🛒 coop, 🐣 babysitting
+- Pick a sensible emoji for any activity not in that list. Do NOT invent the activity
+  itself — only ever use the activities given in the input.
 - Do NOT narrate childcare coverage or dog walks unless something unusual needs flagging.
 """
 
@@ -627,7 +629,7 @@ OUTPUT FORMAT — BULLETS:
 - Blank line between days for readability.
 - End with a "‼️ Flags & asks:" section ONLY if there are open questions or babysitting needs — one line each, max 3, directed asks only (see FLAGS & ASKS rule). No reasoning.
 - Keep each day to 2-4 bullets max. Be concise — one fact per bullet. Omit anything routine.
-- Use the emojis from the TONE list above wherever they apply (swim 🏊, pool 🎱, gym 🏋️, chicken 🐔, etc.) — they are not optional decoration, they make the schedule skimmable.
+- Use the emojis from the TONE list above wherever they apply (pool 🎱, gym 🏋️, chicken 🐔, etc.) — they are not optional decoration, they make the schedule skimmable.
 
 Example:
 📆 Weekly schedule 📆
