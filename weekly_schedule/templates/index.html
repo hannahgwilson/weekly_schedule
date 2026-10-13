@@ -639,7 +639,9 @@
           </div>`;
       }
       inner += `<label class="field" style="margin-top:.8rem">Notes</label>
-        <input type="text" class="w-notes" value="${esc(a.schedule_stability_notes)}" placeholder="e.g. schedule is stable week-to-week">`;
+        <input type="text" class="w-notes" value="${esc(a.schedule_stability_notes)}" placeholder="e.g. schedule is stable week-to-week">
+        <label class="field" style="margin-top:.8rem">Preferences &amp; recurring activities <span class="hint">(free text — goes straight into the schedule prompt)</span></label>
+        <textarea class="w-prefs" style="min-height:90px" placeholder="e.g. Pool league Thursday straight from school. Squash 1–2x/week. Nightly dog walk 22:00.">${esc(a.preferences)}</textarea>`;
       card.innerHTML = inner;
 
       // balance toggles disable that day's time inputs
@@ -670,6 +672,7 @@
           contact_id: card.dataset.cid,
           role,
           schedule_stability_notes: $('.w-notes', card).value.trim(),
+          preferences: $('.w-prefs', card).value.trim(),
         };
         if (role === 'au_pair') {
           entry.weekly_hours_target = $('.w-weekly', card).value.trim();

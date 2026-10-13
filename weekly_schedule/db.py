@@ -233,24 +233,33 @@ def _build_children(contacts: list[dict], events: list[dict]) -> dict[str, dict]
         if c.get("birth_date"):
             payload["birth_date"] = c["birth_date"]
 
-        # Look up swim / forest_school events for this child
-        for e in events_by_contact.get(c["id"], []):
+        # Pass through every activity this child has. Keyed by activity_type so the
+        # prompt can render them generically — an activity that runs several days a
+        # week (e.g. nature days Mon-Thu) collapses into one entry with a days list.
+        # Deliberately NOT a fixed whitelist: a new activity type added in Supabase
+        # must reach the schedule without a code change.
+        activities: dict[str, dict] = {}
+        for e in sorted(events_by_contact.get(c["id"], []),
+                        key=lambda x: _DOW_ORDER.get(x.get("day_of_week"), 99)):
             atype = e.get("activity_type")
-            if atype == "swim":
-                payload["swim"] = {
-                    "day": e.get("day_of_week"),
-                    "time": _fmt_time(e.get("start_time")),
-                    "location": (e.get("location") or {}).get("name") or (e.get("location") or {}).get("address"),
-                }
-                if e.get("end_time") and e.get("start_time"):
-                    duration = _duration_min(e["start_time"], e["end_time"])
-                    if duration is not None:
-                        payload["swim"]["duration_min"] = duration
-            elif atype == "forest_school":
-                payload["forest_school"] = {
-                    "day": e.get("day_of_week"),
-                    "time": _fmt_range(e.get("start_time"), e.get("end_time")) or _fmt_time(e.get("start_time")),
-                }
+            if not atype:
+                continue
+            loc = e.get("location") or {}
+            entry = activities.setdefault(atype, {
+                "label": e.get("title") or atype.replace("_", " "),
+                "days": [],
+                "time": _fmt_range(e.get("start_time"), e.get("end_time")) or _fmt_time(e.get("start_time")),
+                "location": loc.get("name") or loc.get("address"),
+            })
+            if e.get("day_of_week") and e["day_of_week"] not in entry["days"]:
+                entry["days"].append(e["day_of_week"])
+            if e.get("start_time") and e.get("end_time"):
+                duration = _duration_min(e["start_time"], e["end_time"])
+                if duration is not None:
+                    entry["duration_min"] = duration
+
+        if activities:
+            payload["activities"] = activities
 
         children[name_lower] = payload
 
@@ -449,6 +458,7 @@ def fetch_adult_schedules() -> list[dict]:
                 float(hd["weekly_hours_target"]) if hd.get("weekly_hours_target") is not None else None
             ),
             "schedule_stability_notes": hd.get("schedule_stability_notes"),
+            "preferences": hd.get("preferences"),
         }
         if role == "au_pair":
             days: dict[str, dict] = {}
@@ -518,6 +528,7 @@ def save_adult_schedule(entry: dict) -> None:
         "returns_home": _clean_time(entry.get("returns_home")),
         "weekly_hours_target": _clean_num(entry.get("weekly_hours_target")),
         "schedule_stability_notes": (entry.get("schedule_stability_notes") or None),
+        "preferences": (entry.get("preferences") or None),
     }
 
     sb = get_client()
